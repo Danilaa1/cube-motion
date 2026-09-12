@@ -44,7 +44,7 @@ export function leave(_node: Element, { delay = 0, index = 0 }: TransitionParams
 
 // The active face sits in the flow and sizes the node; the inactive one floats over it.
 const face = (el: Element, shown: boolean) =>
-  ((el as HTMLElement).style.cssText += `;display:inline-flex;align-items:center;white-space:nowrap;will-change:opacity,filter,scale${shown ? "" : ";position:absolute;inset:0;opacity:0"}`);
+  ((el as HTMLElement).style.cssText += `;display:inline-flex;align-items:center;white-space:nowrap;will-change:opacity,filter,scale${shown ? ";position:relative" : ";position:absolute;inset:0;opacity:0"}`);
 
 /** `use:morph={active}` on an element whose two children are the off and on faces. */
 export const morph: Action<HTMLElement, boolean> = (node, active) => {

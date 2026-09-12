@@ -102,7 +102,7 @@ const face = (shown: boolean) => ({
   alignItems: "center",
   whiteSpace: "nowrap",
   willChange: "opacity, filter, scale",
-  ...(shown ? {} : { position: "absolute", inset: 0, opacity: 0 }),
+  ...(shown ? { position: "relative" } : { position: "absolute", inset: 0, opacity: 0 }),
 });
 
 /** Two stacked faces. Shows `on` when active, `off` otherwise, morphing between them. */
