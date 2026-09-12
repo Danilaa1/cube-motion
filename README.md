@@ -5,6 +5,7 @@
   <img src="https://img.shields.io/badge/dependencies-zero-22c55e" alt="zero dependencies">
   <img src="https://img.shields.io/bundlephobia/minzip/cube-motion?color=8b5cf6&label=size" alt="bundle size">
   <img src="https://img.shields.io/badge/react-✓-61dafb" alt="react">
+  <img src="https://img.shields.io/badge/solid-✓-2c4f7c" alt="solid">
   <img src="https://img.shields.io/badge/typescript-✓-3178c6" alt="typescript">
 </p>
 
@@ -71,6 +72,20 @@ Each component renders the element you name with `as`, spreads every other prop 
 Already own the element? The hooks underneath are exported too: `useRise`, `usePress`, `useMorph`, `useReveal`. Each creates and returns the ref it needs.
 
 React is an optional peer dependency; the core has none.
+
+## Solid
+
+Same four components, same props, from `cube-motion/solid`.
+
+```tsx
+import { Rise, Press, Morph, Reveal } from "cube-motion/solid";
+
+<Press onClick={save}>
+  <Morph active={saved()} off="Save" on="Saved" />
+</Press>
+```
+
+`as` takes a tag or a component. `class` and the rest go to the element. A `ref` you pass is called with the element. Bindings are made in `onMount` and released in `onCleanup`, so nothing runs during server rendering. Solid is an optional peer dependency.
 
 ## Reduced motion
 

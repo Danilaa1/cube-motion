@@ -10,7 +10,8 @@ makes the motion decisions so the caller does not.
 
 ## Invariants
 
-- **Zero runtime dependencies.** React is an optional peer for `./react`.
+- **Zero runtime dependencies.** React and Solid are optional peers for
+  `./react` and `./solid`.
 - **No dials.** No function takes an easing, duration, distance or scale.
   A new job gets a new function. An option only ever says where or when
   (targets, stagger, delay, scroll root), never how.
@@ -34,7 +35,9 @@ makes the motion decisions so the caller does not.
 | `src/tokens.ts` | every number and the curve |
 | `src/index.ts` | `rise`, `press`, `morph`, `reveal`, public types |
 | `src/react.ts` | four polymorphic components (`as`, props spread, ref merged) on top of one hook per job |
+| `src/solid.ts` | the same four components on `Dynamic`, no JSX so tsc is the only build; lifecycle in the component body because Solid applies `ref` outside the owner |
 | `tests/setup.ts` | WAAPI, matchMedia and IntersectionObserver stand-ins for happy-dom |
+| `vitest.config.ts` | inlines solid-js with the `browser` condition, otherwise Node loads Solid's server build and `render` has no owner |
 
 ## Definition of done
 

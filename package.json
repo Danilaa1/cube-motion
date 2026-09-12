@@ -1,7 +1,7 @@
 {
   "name": "cube-motion",
   "version": "0.1.0",
-  "description": "Four motions, no dials. rise, press, morph and reveal on the Web Animations API, with a React adapter.",
+  "description": "Four motions, no dials. rise, press, morph and reveal on the Web Animations API, with React and Solid adapters.",
   "type": "module",
   "license": "MIT",
   "author": "Daniel Belyi",
@@ -17,7 +17,8 @@
     "entrance",
     "press",
     "morph",
-    "reveal"
+    "reveal",
+    "solid"
   ],
   "sideEffects": false,
   "files": [
@@ -37,13 +38,21 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
     },
+    "./solid": {
+      "types": "./dist/solid.d.ts",
+      "import": "./dist/solid.js"
+    },
     "./agent.md": "./.github/agent.md"
   },
   "peerDependencies": {
-    "react": ">=18 <20"
+    "react": ">=18 <20",
+    "solid-js": ">=1.8 <2"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "solid-js": {
       "optional": true
     }
   },
@@ -60,6 +69,7 @@
     "happy-dom": "^20.10.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.8",
+    "solid-js": "^1.9.13",
     "typescript": "^5.8.3",
     "vitest": "^4.1.8"
   }

@@ -1,6 +1,6 @@
 # cube-motion
 
-Four fixed motions on the Web Animations API. Zero dependencies. Optional React adapter.
+Four fixed motions on the Web Animations API. Zero dependencies. Optional React and Solid adapters.
 
 ```
 npm i cube-motion
@@ -55,6 +55,17 @@ const ref = useReveal(options?);    // attach to a container; its children revea
 
 Each hook creates and returns its ref, generic over the element type
 (`usePress<HTMLButtonElement>()`). Hooks bind in `useEffect` and clean up on unmount.
+
+## Solid
+
+```tsx
+import { Rise, Press, Morph, Reveal } from "cube-motion/solid";
+```
+
+Same components and props as React, Solid conventions: `class` not
+`className`, `ref` is a variable or callback, `active` is read reactively so
+pass `saved()` or a getter. No hooks; the components are the whole API.
+Bindings happen in `onMount` and are released in `onCleanup`, so SSR is safe.
 
 ## Markup for morph in vanilla
 
