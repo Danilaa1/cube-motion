@@ -12,6 +12,14 @@ export interface Recorded {
 }
 
 const live = new WeakMap<Element, Recorded[]>();
+let pending: (() => void)[] = [];
+
+/** Resolve `finished` on every animation recorded so far, as if time had passed. */
+export const settle = () => {
+  const done = pending;
+  pending = [];
+  done.forEach((r) => r());
+};
 
 export const animationsOf = (el: Element) => live.get(el) ?? [];
 
@@ -25,7 +33,11 @@ export let observed: Element[] = [];
 export let observerOptions: IntersectionObserverInit | undefined;
 
 export function install() {
+  pending = [];
   Element.prototype.animate = function (keyframes, options) {
+    let resolve!: () => void;
+    const finished = new Promise<void>((r) => (resolve = r));
+    pending.push(resolve);
     const a: Recorded = {
       keyframes: keyframes as Keyframe[],
       options: options as KeyframeAnimationOptions,
@@ -36,8 +48,9 @@ export function install() {
       },
       finish() {
         a.finishedEarly = true;
+        resolve();
       },
-      finished: Promise.resolve(),
+      finished,
     };
     live.set(this, [...(live.get(this) ?? []), a]);
     return a as unknown as Animation;

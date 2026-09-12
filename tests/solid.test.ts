@@ -1,8 +1,8 @@
 import { createSignal } from "solid-js";
 import { createComponent, render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { Morph, Press, Reveal, Rise } from "../src/solid.js";
-import { animationsOf, install, observed } from "./setup.js";
+import { Morph, Reveal, Rise } from "../src/solid.js";
+import { animationsOf, install, observed, settle } from "./setup.js";
 
 let host: HTMLElement;
 let dispose = () => {};
@@ -38,17 +38,37 @@ describe("solid components", () => {
     expect(animationsOf(section.children[1])[0].options.delay).toBe(40);
   });
 
-  it("Press renders a button by default, binds press, hands back the ref, and unbinds on dispose", () => {
+  it("Rise with show leaves its children, then unmounts, and comes back with a rise", async () => {
+    const [open, setOpen] = createSignal(true);
+    mount(() =>
+      createComponent(Rise, {
+        get show() {
+          return open();
+        },
+        class: "panel",
+        get children() {
+          return document.createElement("p");
+        },
+      } as never),
+    );
+    const p = host.querySelector("p")!;
+    expect(animationsOf(p)[0].options.duration).toBe(640);
+    setOpen(false);
+    expect(host.querySelector(".panel")).not.toBeNull();
+    expect(animationsOf(p)[1].options).toMatchObject({ duration: 320, fill: "forwards" });
+    expect(host.querySelector(".panel")).not.toBeNull();
+    settle();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(host.querySelector(".panel")).toBeNull();
+    setOpen(true);
+    expect(animationsOf(host.querySelector("p")!)[0].options.duration).toBe(640);
+  });
+
+  it("Rise hands back the ref", () => {
     let captured: Element | undefined;
-    mount(() => createComponent(Press, { ref: (el: Element) => (captured = el), children: "Save" } as never));
-    const button = host.querySelector("button")!;
-    expect(captured).toBe(button);
-    expect(button.textContent).toBe("Save");
-    button.dispatchEvent(new Event("pointerdown"));
-    expect(animationsOf(button)[0].keyframes).toEqual({ scale: 0.97 });
-    dispose();
-    button.dispatchEvent(new Event("pointerdown"));
-    expect(animationsOf(button)).toHaveLength(1);
+    mount(() => createComponent(Rise, { as: "section", ref: (el: Element) => (captured = el) } as never));
+    expect(captured).toBe(host.querySelector("section"));
   });
 
   it("Morph stacks two faces, hides the inactive one from the first paint, and morphs on change", () => {

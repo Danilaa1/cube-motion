@@ -1,6 +1,18 @@
-import { createEffect, mergeProps, on, onCleanup, onMount, splitProps, type ComponentProps, type JSX, type ValidComponent } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  mergeProps,
+  on,
+  onCleanup,
+  onMount,
+  Show,
+  splitProps,
+  type ComponentProps,
+  type JSX,
+  type ValidComponent,
+} from "solid-js";
 import { createComponent, Dynamic } from "solid-js/web";
-import { morph, press, reveal, rise, type RevealOptions, type RiseOptions } from "./index.js";
+import { leave, morph, reveal, rise, type RevealOptions, type RiseOptions } from "./index.js";
 
 // Components: render the element you name, spread the rest, bind the motion.
 
@@ -20,20 +32,46 @@ const element = (as: ValidComponent, others: Record<string, unknown>, theirs: un
     }) as ComponentProps<typeof Dynamic>,
   );
 
-/** Children rise on mount, staggered. Renders a div unless `as` says otherwise. */
-export function Rise<T extends ValidComponent = "div">(props: Props<T, RiseOptions>): JSX.Element {
-  const [local, others] = splitProps(props as Props<"div", RiseOptions>, ["as", "stagger", "delay", "ref"]);
-  let el!: Element;
-  onMount(() => rise(el.children, { stagger: local.stagger, delay: local.delay }));
-  return element(local.as ?? "div", others, local.ref, (e) => (el = e));
+interface RiseProps extends RiseOptions {
+  /** Mounted and risen while true; leaves, then unmounts, when it turns false. Default true. */
+  show?: boolean;
 }
 
-/** A pressable element with press feedback. Renders a button unless `as` says otherwise. */
-export function Press<T extends ValidComponent = "button">(props: Props<T, {}>): JSX.Element {
-  const [local, others] = splitProps(props as Props<"button", {}>, ["as", "ref"]);
-  let el!: Element;
-  onMount(() => onCleanup(press(el)));
-  return element(local.as ?? "button", others, local.ref, (e) => (el = e));
+/** Children rise on mount and leave before unmount. Renders a div unless `as` says otherwise. */
+export function Rise<T extends ValidComponent = "div">(props: Props<T, RiseProps>): JSX.Element {
+  const [local, others] = splitProps(props as Props<"div", RiseProps>, ["as", "show", "stagger", "delay", "ref"]);
+  const show = () => local.show ?? true;
+  const [mounted, setMounted] = createSignal(show());
+  let el: Element | undefined;
+  const enter = () => el && rise(el.children, { stagger: local.stagger, delay: local.delay });
+  createEffect(
+    on(
+      show,
+      (shown) => {
+        if (shown) {
+          if (mounted()) enter();
+          else setMounted(true);
+          return;
+        }
+        if (!el) return;
+        let live = true;
+        Promise.all(leave(el.children).map((a) => a.finished))
+          .then(() => live && setMounted(false))
+          .catch(() => {});
+        onCleanup(() => (live = false));
+      },
+      { defer: true },
+    ),
+  );
+  return createComponent(Show, {
+    get when() {
+      return mounted();
+    },
+    get children() {
+      onMount(enter);
+      return element(local.as ?? "div", others, local.ref, (e) => (el = e));
+    },
+  } as unknown as ComponentProps<typeof Show>);
 }
 
 interface MorphProps {

@@ -1,3 +1,8 @@
+---
+name: cube-motion
+description: Use when adding UI motion with cube-motion. Four fixed motions (rise, leave, morph, reveal) on the Web Animations API with React and Solid components. Nothing to tune; pick the job.
+---
+
 # cube-motion
 
 Four fixed UI motions on the Web Animations API. Zero dependencies. Optional React and Solid adapters. Nothing to tune: pick the job, name the element.

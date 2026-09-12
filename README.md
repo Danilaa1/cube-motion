@@ -11,110 +11,124 @@
 
 Four motions, no dials. Every duration, curve and distance is already decided, so the only thing left to choose is which element moves.
 
+## 📦 Install
+
 ```
 npm i cube-motion
 ```
 
-## Quick start
+## ⚡ Quick start
 
 ```ts
-import { rise, press, morph, reveal } from "cube-motion";
+import { rise, leave, morph, reveal } from "cube-motion";
 
-rise(".hero > *");        // staggered entrance on load
-press(button);            // pointer feedback, returns unbind
+rise(".hero > *");        // staggered entrance
+leave(toast);             // staggered exit, holds the end state
 morph(oldIcon, newIcon);  // one state into the next
 reveal(".card");          // rise when scrolled into view
 ```
 
-## API
-
-Targets are a selector, one element, or anything iterable of elements: a NodeList, an HTMLCollection, an array.
+Targets are a selector, one element, or anything iterable of elements.
 
 | Function | Does | Returns |
 | --- | --- | --- |
-| `rise(targets, { stagger?, delay? })` | Fades each element in with a 12px lift over 640ms, 70ms apart. | `Animation[]` |
-| `press(el)` | Scales to 0.97 while the pointer is down, springs back on release. | `() => void` unbind |
-| `morph(outgoing, incoming)` | Outgoing shrinks and blurs away over 220ms, incoming grows in 130ms behind it. | `[Animation, Animation]` |
+| `rise(targets, { stagger?, delay? })` | Fades each element in with a lift, one after another. | `Animation[]` |
+| `leave(targets, { stagger?, delay? })` | Fades each element out with a drop. The end state holds until you remove it. | `Animation[]` |
+| `morph(outgoing, incoming)` | Outgoing shrinks and blurs away, incoming grows in behind it. | `[Animation, Animation]` |
 | `reveal(targets, { stagger?, root? })` | Hides now, rises each element the first time it enters the viewport. | `() => void` disconnect |
 
-Every call cancels what was already running on that element, so rapid clicks and re-renders stay clean. `rise` and `morph` return the `Animation` objects, so you can await `finished` or cancel them yourself.
+Every call cancels what was already running on that element, so rapid toggles stay clean. `rise`, `leave` and `morph` return the `Animation` objects: `await Promise.all(leave(el).map((a) => a.finished))` before you remove a node.
 
-There is no `easing`, `duration` or `distance` option and there will not be one. Stagger, delay and scroll root describe *where* and *when* a motion happens. *How* it moves is the library's job.
+Options say *where* and *when*: targets, stagger, delay, scroll root. *How* it moves is fixed. There is no `easing`, `duration` or `distance` option and there will not be one.
 
-## React
+## 🔢 The numbers
+
+The numbers are the product. Each one is a decision you no longer have to make, and here is why it landed where it did.
+
+| Job | Number | Why |
+| --- | --- | --- |
+| rise | 640ms, 12px lift, 70ms stagger | Long enough that five staggered elements read as a sequence instead of a flicker, and five of them still land inside a second. 12px is the smallest lift that reads as arriving rather than fading. |
+| leave | 320ms, 12px drop, 40ms stagger | Half the entrance. The user has already decided to move on, so the exit gets out of the way. The drop mirrors the lift so enter and exit read as one gesture. |
+| morph | 220ms, scale 0.25, blur 4px, incoming starts 130ms in | Short enough to feel like one object changing state. The blur hides the frame where both faces overlap. The incoming face is already growing before the outgoing one is gone, so there is never an empty frame. |
+| reveal | rise at 60ms stagger, fires 10% inside the viewport edge | Elements animate when they are genuinely in view, not while they touch the edge. Scroll already spaces them, so the stagger is tighter than a page load. |
+| curve | `cubic-bezier(0.2, 0, 0, 1)` | A strong ease-out. Fast start so the interface answers at once, long settle so nothing snaps. One curve everywhere so every motion feels like the same hand. |
+
+Change them by copying the file into your project. They live in `src/tokens.ts`, one screen, with the reason beside each one.
+
+## ⚛️ React
 
 ```tsx
-import { Rise, Press, Morph, Reveal } from "cube-motion/react";
+import { Rise, Morph, Reveal } from "cube-motion/react";
 
 <Rise as="section" className="hero">
   <h1>Four motions.</h1>
   <p>No dials.</p>
 </Rise>
 
-<Press onClick={save}>
+<Rise show={open} className="toast">     // rises in, leaves before unmount
+  Saved
+</Rise>
+
+<button onClick={save}>
   <Morph active={saved} off="Save" on="Saved" />
-</Press>
+</button>
 
 <Reveal as="ul" className="cards">{cards}</Reveal>
 ```
 
-Each component renders the element you name with `as`, spreads every other prop onto it, and binds the motion. There is no wrapper: `Reveal` is your list, `Press` is your button.
+Each component renders the element you name with `as`, spreads every other prop onto it, and binds the motion. There is no wrapper: `Reveal` is your list.
 
 | Component | Renders | Own props |
 | --- | --- | --- |
-| `Rise` | `div` | `stagger`, `delay`. Children rise on mount. |
-| `Press` | `button` | none. Keep it on things that are already interactive. |
+| `Rise` | `div` | `show`, `stagger`, `delay`. Children rise on mount. With `show`, they leave and then unmount when it turns false. |
 | `Morph` | `span` | `active`, `off`, `on`. Faces are stacked for you, the inactive one hidden from the first paint. |
 | `Reveal` | `div` | `stagger`, `root`. Children reveal as they scroll in. |
 
-`as` takes a tag or your own component (`as={Button}`, which must forward its ref on React 18). A `ref` you pass is merged with the one the component needs.
+`as` takes a tag or your own component. A `ref` you pass is merged. Already own the element? `useRise`, `useMorph` and `useReveal` are exported too, each returning the ref it needs.
 
-Already own the element? The hooks underneath are exported too: `useRise`, `usePress`, `useMorph`, `useReveal`. Each creates and returns the ref it needs.
-
-React is an optional peer dependency; the core has none.
-
-## Solid
-
-Same four components, same props, from `cube-motion/solid`.
+## 🔹 Solid
 
 ```tsx
-import { Rise, Press, Morph, Reveal } from "cube-motion/solid";
+import { Rise, Morph, Reveal } from "cube-motion/solid";
 
-<Press onClick={save}>
-  <Morph active={saved()} off="Save" on="Saved" />
-</Press>
+<Rise show={open()} class="toast">Saved</Rise>
+<Morph active={saved()} off="Save" on="Saved" />
 ```
 
-`as` takes a tag or a component. `class` and the rest go to the element. A `ref` you pass is called with the element. Bindings are made in `onMount` and released in `onCleanup`, so nothing runs during server rendering. Solid is an optional peer dependency.
+Same components, same props, Solid conventions: `class`, a `ref` variable or callback, reactive reads. Bindings are made in `onMount` and released in `onCleanup`, so nothing runs on the server.
 
-## Reduced motion
+React and Solid are optional peer dependencies. The core has none.
 
-Every function reads `prefers-reduced-motion` when it runs. Opacity stays, movement goes: `rise` becomes a fade, `morph` a crossfade, and `press` dims to 0.8 instead of shrinking.
+## 👆 Press is CSS
 
-## The numbers
+Press feedback used to be the fifth function. It is three lines of CSS, and the CSS version answers keyboard activation too, so the function was retired.
 
-| Job | Duration | Detail |
-| --- | --- | --- |
-| press | 120ms in, 320ms out | scale 0.97 |
-| morph | 220ms | scale 0.25, blur 4px, incoming leads by 130ms |
-| rise | 640ms | 12px lift, 70ms stagger |
-| reveal | 640ms | 60ms stagger, fires at 10% from the bottom edge |
+```css
+button { transition: scale 320ms cubic-bezier(0.2, 0, 0, 1); }
+button:active { scale: 0.97; transition-duration: 120ms; }
+```
 
-One curve everywhere: `cubic-bezier(0.2, 0, 0, 1)`.
+Fast in, slow out, same curve as everything else.
 
-## Why no dials
+## ♿ Reduced motion
 
-Motion libraries hand you every parameter and leave you to find the ones that feel right. Cube ships the answers instead. New functions arrive for new jobs, toast, dialog, reorder. No function ever grows an easing option.
+Every function reads `prefers-reduced-motion` when it runs. Opacity stays, movement goes: `rise` and `leave` become fades, `morph` a crossfade.
+
+## 🤖 Agents
+
+A library with no dials is one an agent cannot misuse. It can only choose the job. `cube-motion/agent.md` is written for that reader: signatures, a job table, the rules, and nothing to tune.
+
+```
+npx skills add Danilaa1/cube-motion
+```
+
+installs it as a skill for Claude Code, Cursor and friends.
+
+## 🧭 Why no dials
+
+Motion libraries hand you every parameter and leave you to find the ones that feel right. Cube ships the answers. New functions arrive for new jobs. No function ever grows an easing option.
 
 Reach for Motion or GSAP when you need a timeline, gestures or layout animation.
-
-## Try it locally
-
-```
-npm run build
-```
-
-Then open `examples/index.html` in a browser. It reads the compiled output.
 
 ## License
 

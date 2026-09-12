@@ -11,7 +11,7 @@ import {
   type Ref as ReactRef,
   type RefObject,
 } from "react";
-import { morph, press, reveal, rise, type RevealOptions, type RiseOptions } from "./index.js";
+import { leave, morph, reveal, rise, type RevealOptions, type RiseOptions } from "./index.js";
 
 type Ref<T extends Element> = RefObject<T | null>;
 
@@ -23,13 +23,6 @@ export function useRise<T extends Element = HTMLElement>(options?: RiseOptions):
   useEffect(() => {
     if (ref.current) rise(ref.current.children, options);
   }, []);
-  return ref;
-}
-
-/** Returns a ref for the pressable element. */
-export function usePress<T extends Element = HTMLElement>(): Ref<T> {
-  const ref = useRef<T>(null);
-  useEffect(() => (ref.current ? press(ref.current) : undefined), []);
   return ref;
 }
 
@@ -67,16 +60,34 @@ const merged = (own: Ref<Element>, theirs: ReactRef<Element> | undefined) => (el
   else if (theirs) (theirs as { current: Element | null }).current = el;
 };
 
-/** Children rise on mount, staggered. Renders a div unless `as` says otherwise. */
-export const Rise = forwardRef<Element, Props<ElementType, RiseOptions>>(
-  ({ as = "div", stagger, delay, ...rest }, ref) =>
-    createElement(as, { ...rest, ref: merged(useRise({ stagger, delay }), ref) }),
-) as unknown as Poly<"div", RiseOptions>;
+interface RiseProps extends RiseOptions {
+  /** Mounted and risen while true; leaves, then unmounts, when it turns false. Default true. */
+  show?: boolean;
+}
 
-/** A pressable element with press feedback. Renders a button unless `as` says otherwise. */
-export const Press = forwardRef<Element, Props<ElementType, {}>>(({ as = "button", ...rest }, ref) =>
-  createElement(as, { ...rest, ref: merged(usePress(), ref) }),
-) as unknown as Poly<"button", {}>;
+/** Children rise on mount and leave before unmount. Renders a div unless `as` says otherwise. */
+export const Rise = forwardRef<Element, Props<ElementType, RiseProps>>(
+  ({ as = "div", show = true, stagger, delay, ...rest }, ref) => {
+    const el = useRef<Element>(null);
+    const [mounted, setMounted] = useState(show);
+    if (show && !mounted) setMounted(true);
+    useEffect(() => {
+      if (!el.current) return;
+      if (show) {
+        rise(el.current.children, { stagger, delay });
+        return;
+      }
+      let live = true;
+      Promise.all(leave(el.current.children).map((a) => a.finished))
+        .then(() => live && setMounted(false))
+        .catch(() => {});
+      return () => {
+        live = false;
+      };
+    }, [show]);
+    return mounted ? createElement(as, { ...rest, ref: merged(el, ref) }) : null;
+  },
+) as unknown as Poly<"div", RiseProps>;
 
 interface MorphProps {
   active: boolean;

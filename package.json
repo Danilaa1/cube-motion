@@ -1,7 +1,7 @@
 {
   "name": "cube-motion",
   "version": "0.1.0",
-  "description": "Four motions, no dials. rise, press, morph and reveal on the Web Animations API, with React and Solid adapters.",
+  "description": "Four motions, no dials. rise, leave, morph and reveal on the Web Animations API, with React and Solid adapters.",
   "type": "module",
   "license": "MIT",
   "author": "Daniel Belyi",
@@ -15,10 +15,11 @@
     "react",
     "reduced-motion",
     "entrance",
-    "press",
     "morph",
     "reveal",
-    "solid"
+    "solid",
+    "exit",
+    "transition"
   ],
   "sideEffects": false,
   "files": [
@@ -58,7 +59,7 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build",
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && node scripts/skill.mjs && tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "pack:check": "npm pack --dry-run",
     "test": "vitest run"

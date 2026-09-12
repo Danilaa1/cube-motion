@@ -5,8 +5,10 @@ ships in the npm package; this file is for working on the library itself.
 
 ## What this is
 
-Four motions on `Element.animate` and `IntersectionObserver`. The library
-makes the motion decisions so the caller does not.
+Four motions on `Element.animate` and `IntersectionObserver`: rise, leave,
+morph, reveal. The library makes the motion decisions so the caller does not.
+Press was retired on 2026-09-12; it is three lines of CSS and the CSS handles
+keyboard activation, which the function never did.
 
 ## Invariants
 
@@ -21,7 +23,10 @@ makes the motion decisions so the caller does not.
 - **Reduced motion is checked inside every function at call time.** Opacity
   and colour stay, translate, scale and blur go, `press` dims instead.
 - **Cancel before animate.** Each function clears the running animations on
-  its elements first so interruption never stacks fills.
+  its elements first so interruption never stacks fills. This is what makes
+  rise after leave and leave after rise safe mid-flight.
+- **Exit belongs to the entrance.** `leave` is the mirror of `rise` and the
+  adapters expose it as `show` on `Rise`, never as a separate wrapper.
 - **One job per file.** A new job is a new `src/<job>.ts` plus one line in
   `index.ts`, one `describe` in `tests/`, one row in the README. Retiring
   is the same in reverse. The adapters stay whole; their shared plumbing is
@@ -38,11 +43,12 @@ makes the motion decisions so the caller does not.
 | --- | --- |
 | `src/tokens.ts` | every number and the curve |
 | `src/dom.ts` | `Targets`, `calm`, `list`, `clear`; keep it to helpers more than one job uses |
-| `src/rise.ts`, `press.ts`, `morph.ts`, `reveal.ts` | one job each, its options type beside it |
+| `src/rise.ts`, `leave.ts`, `morph.ts`, `reveal.ts` | one job each, its options type beside it |
 | `src/index.ts` | the export list, nothing else |
 | `src/react.ts` | four polymorphic components (`as`, props spread, ref merged) on top of one hook per job |
 | `src/solid.ts` | the same four components on `Dynamic`, no JSX so tsc is the only build; lifecycle in the component body because Solid applies `ref` outside the owner |
 | `tests/setup.ts` | WAAPI, matchMedia and IntersectionObserver stand-ins for happy-dom |
+| `scripts/skill.mjs` | writes `skills/cube-motion/SKILL.md` from `.github/agent.md` on build; edit the source, never the skill |
 | `vitest.config.ts` | inlines solid-js with the `browser` condition, otherwise Node loads Solid's server build and `render` has no owner |
 
 ## Definition of done
@@ -50,7 +56,8 @@ makes the motion decisions so the caller does not.
 1. Vitest case in `tests/` for the behaviour: what the animation was asked
    to do, not a pixel.
 2. README and `.github/agent.md` updated in the same commit if the public
-   API changed.
+   API changed. The README's numbers table carries the reason for every
+   number; a changed number changes its reason.
 3. `npm run check && npm test && npm run pack:check` green.
 
 ## Site

@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { morph, press, reveal, rise } from "../src/index.js";
+import { leave, morph, reveal, rise } from "../src/index.js";
 import { animationsOf, install, intersect, observed, observerOptions, setReduceMotion } from "./setup.js";
 
 const el = () => document.body.appendChild(document.createElement("div"));
-const fire = (target: Element, type: string) => target.dispatchEvent(new Event(type));
-const tick = () => new Promise((r) => setTimeout(r));
 
 beforeEach(() => {
   document.body.innerHTML = "";
@@ -41,35 +39,32 @@ describe("rise", () => {
   });
 });
 
-describe("press", () => {
-  it("scales to 0.97 in 120ms, back in 320ms, then releases its fill", async () => {
-    const button = el();
-    const unbind = press(button);
-    fire(button, "pointerdown");
-    expect(animationsOf(button)[0].keyframes).toEqual({ scale: 0.97 });
-    expect(animationsOf(button)[0].options).toMatchObject({ duration: 120, fill: "forwards" });
-    fire(button, "pointerup");
-    expect(animationsOf(button)[1].options.duration).toBe(320);
-    await tick();
-    expect(button.getAnimations()).toHaveLength(0);
-    unbind();
-    fire(button, "pointerdown");
-    expect(animationsOf(button)).toHaveLength(2);
+describe("leave", () => {
+  it("drops 12px over 320ms with a 40ms stagger and holds the end state", () => {
+    const els = [el(), el()];
+    leave(els);
+    const first = animationsOf(els[0])[0];
+    expect(first.keyframes).toEqual([{ opacity: 1, translate: "0 0" }, { opacity: 0, translate: "0 12px" }]);
+    expect(first.options).toMatchObject({ duration: 320, fill: "forwards" });
+    expect(animationsOf(els[1])[0].options.delay).toBe(40);
   });
 
-  it("ignores a release with nothing held", () => {
-    const button = el();
-    press(button);
-    fire(button, "pointerleave");
-    expect(animationsOf(button)).toHaveLength(0);
+  it("cancels a running rise, and rise cancels a running leave", () => {
+    const target = el();
+    rise(target);
+    leave(target);
+    rise(target);
+    const [entered, left, again] = animationsOf(target);
+    expect(entered.cancelled).toBe(true);
+    expect(left.cancelled).toBe(true);
+    expect(again.cancelled).toBe(false);
   });
 
-  it("dims instead of shrinking under reduced motion", () => {
+  it("fades only under reduced motion", () => {
     setReduceMotion(true);
-    const button = el();
-    press(button);
-    fire(button, "pointerdown");
-    expect(animationsOf(button)[0].keyframes).toEqual({ opacity: 0.8 });
+    const target = el();
+    leave(target);
+    expect(animationsOf(target)[0].keyframes).toEqual([{ opacity: 1, translate: "0 0" }, { opacity: 0 }]);
   });
 });
 

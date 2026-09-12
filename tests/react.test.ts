@@ -1,8 +1,8 @@
-import { act, createElement, createRef } from "react";
+import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { Morph, Press, Reveal, Rise, useMorph, usePress, useReveal, useRise } from "../src/react.js";
-import { animationsOf, install, observed } from "./setup.js";
+import { Morph, Reveal, Rise, useMorph, useReveal, useRise } from "../src/react.js";
+import { animationsOf, install, observed, settle } from "./setup.js";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -32,14 +32,26 @@ describe("components", () => {
     expect(animationsOf(section.children[1])[0].options.delay).toBe(40);
   });
 
-  it("Press renders a button by default, binds press, and merges the caller's ref", async () => {
-    const ref = createRef<Element>();
-    await render(createElement(Press, { ref, type: "button" } as never, "Save"));
-    const button = host.querySelector("button")!;
-    expect(ref.current).toBe(button);
-    expect(button.textContent).toBe("Save");
-    button.dispatchEvent(new Event("pointerdown"));
-    expect(animationsOf(button)[0].keyframes).toEqual({ scale: 0.97 });
+  it("Rise with show leaves its children, then unmounts, and comes back with a rise", async () => {
+    const Panel = ({ open }: { open: boolean }) => createElement(Rise, { show: open, className: "panel" } as never, createElement("p"));
+    await render(createElement(Panel, { open: true }));
+    const p = host.querySelector("p")!;
+    expect(animationsOf(p)[0].options.duration).toBe(640);
+    await render(createElement(Panel, { open: false }));
+    expect(host.querySelector(".panel")).not.toBeNull();
+    expect(animationsOf(p)[1].options).toMatchObject({ duration: 320, fill: "forwards" });
+    await act(async () => settle());
+    expect(host.querySelector(".panel")).toBeNull();
+    await render(createElement(Panel, { open: true }));
+    expect(animationsOf(host.querySelector("p")!)[0].options.duration).toBe(640);
+  });
+
+  it("Rise with show false from the start renders nothing until shown", async () => {
+    const Panel = ({ open }: { open: boolean }) => createElement(Rise, { show: open } as never, createElement("p"));
+    await render(createElement(Panel, { open: false }));
+    expect(host.querySelector("p")).toBeNull();
+    await render(createElement(Panel, { open: true }));
+    expect(animationsOf(host.querySelector("p")!)[0].options.duration).toBe(640);
   });
 
   it("Morph stacks two faces, hides the inactive one from the first paint, and morphs on change", async () => {
@@ -72,17 +84,6 @@ describe("hooks", () => {
     }
     await mount(List);
     expect(animationsOf(host.querySelectorAll("li")[1])[0].options.delay).toBe(70);
-  });
-
-  it("usePress binds press feedback", async () => {
-    function Button() {
-      const ref = usePress();
-      return createElement("button", { ref });
-    }
-    await mount(Button);
-    const button = host.querySelector("button")!;
-    button.dispatchEvent(new Event("pointerdown"));
-    expect(animationsOf(button)[0].keyframes).toEqual({ scale: 0.97 });
   });
 
   it("useMorph settles without motion on mount and morphs when active flips", async () => {

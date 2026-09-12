@@ -7,18 +7,20 @@
   <style>
     body { margin: 0; padding: 48px 24px; font: 15px/1.5 system-ui, sans-serif; color: #18181a; background: #fafafa; }
     main { max-width: 480px; margin: 0 auto; display: grid; gap: 24px; }
-    .card { padding: 16px; background: #fff; border: 1px solid #e4e4e6; border-radius: 12px; }
-    button { font: inherit; padding: 6px 12px; border: 1px solid #d8d8dc; border-radius: 999px; background: #fff; cursor: pointer; }
-    button i { font-style: normal; grid-area: 1 / 1; }
-    button span { display: inline-grid; }
+    .card, .toast { padding: 16px; background: #fff; border: 1px solid #e4e4e6; border-radius: 12px; }
+    button { font: inherit; padding: 6px 12px; border: 1px solid #d8d8dc; border-radius: 999px; background: #fff; cursor: pointer; transition: scale 320ms cubic-bezier(0.2, 0, 0, 1); }
+    button:active { scale: 0.97; transition-duration: 120ms; }
+    .faces { display: inline-grid; }
+    .faces > * { grid-area: 1 / 1; font-style: normal; }
     .spacer { height: 120vh; }
   </style>
 </head>
 <body>
   <main>
     <h1>cube-motion</h1>
-    <p>rise on load, press on the button, morph on click, reveal below the fold.</p>
-    <button id="save"><span><i id="off">Save</i><i id="on">Saved</i></span></button>
+    <p>rise on load, morph and leave on the button, reveal below the fold. Press is CSS.</p>
+    <button id="save"><span class="faces"><i id="off">Save</i><i id="on">Saved</i></span></button>
+    <div class="toast" id="toast" hidden>Saved</div>
     <div class="spacer"></div>
     <div class="card">one</div>
     <div class="card">two</div>
@@ -26,20 +28,26 @@
   </main>
   <script type="module">
     // Run `npm run build` first; the example reads the compiled output.
-    import { rise, press, morph, reveal } from "../dist/index.js";
+    import { rise, leave, morph, reveal } from "../dist/index.js";
 
-    rise("main > :not(.spacer, .card)");
+    rise("main > :not(.spacer, .card, .toast)");
     reveal(".card");
 
-    const save = document.querySelector("#save");
     const off = document.querySelector("#off");
     const on = document.querySelector("#on");
+    const toast = document.querySelector("#toast");
     on.style.opacity = "0";
     let saved = false;
-    press(save);
-    save.addEventListener("click", () => {
+    document.querySelector("#save").addEventListener("click", async () => {
       saved = !saved;
       morph(saved ? off : on, saved ? on : off);
+      if (saved) {
+        toast.hidden = false;
+        rise(toast);
+      } else {
+        await Promise.all(leave(toast).map((a) => a.finished));
+        toast.hidden = true;
+      }
     });
   </script>
 </body>
