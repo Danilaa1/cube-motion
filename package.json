@@ -1,0 +1,66 @@
+{
+  "name": "cube-motion",
+  "version": "0.1.0",
+  "description": "Four motions, no dials. rise, press, morph and reveal on the Web Animations API, with a React adapter.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Daniel Belyi",
+  "repository": "github:Danilaa1/cube-motion",
+  "homepage": "https://github.com/Danilaa1/cube-motion-site",
+  "keywords": [
+    "animation",
+    "motion",
+    "waapi",
+    "web-animations",
+    "react",
+    "reduced-motion",
+    "entrance",
+    "press",
+    "morph",
+    "reveal"
+  ],
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    ".github/agent.md",
+    "LICENSE"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./agent.md": "./.github/agent.md"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "pack:check": "npm pack --dry-run",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.7",
+    "happy-dom": "^20.10.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.8",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.8"
+  }
+}

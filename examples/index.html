@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cube-motion</title>
+  <style>
+    body { margin: 0; padding: 48px 24px; font: 15px/1.5 system-ui, sans-serif; color: #18181a; background: #fafafa; }
+    main { max-width: 480px; margin: 0 auto; display: grid; gap: 24px; }
+    .card { padding: 16px; background: #fff; border: 1px solid #e4e4e6; border-radius: 12px; }
+    button { font: inherit; padding: 6px 12px; border: 1px solid #d8d8dc; border-radius: 999px; background: #fff; cursor: pointer; }
+    button i { font-style: normal; grid-area: 1 / 1; }
+    button span { display: inline-grid; }
+    .spacer { height: 120vh; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>cube-motion</h1>
+    <p>rise on load, press on the button, morph on click, reveal below the fold.</p>
+    <button id="save"><span><i id="off">Save</i><i id="on">Saved</i></span></button>
+    <div class="spacer"></div>
+    <div class="card">one</div>
+    <div class="card">two</div>
+    <div class="card">three</div>
+  </main>
+  <script type="module">
+    // Run `npm run build` first; the example reads the compiled output.
+    import { rise, press, morph, reveal } from "../dist/index.js";
+
+    rise("main > :not(.spacer, .card)");
+    reveal(".card");
+
+    const save = document.querySelector("#save");
+    const off = document.querySelector("#off");
+    const on = document.querySelector("#on");
+    on.style.opacity = "0";
+    let saved = false;
+    press(save);
+    save.addEventListener("click", () => {
+      saved = !saved;
+      morph(saved ? off : on, saved ? on : off);
+    });
+  </script>
+</body>
+</html>
