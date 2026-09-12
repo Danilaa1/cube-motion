@@ -39,7 +39,7 @@ Targets are a selector, one element, or anything iterable of elements.
 | `morph(outgoing, incoming)` | Outgoing shrinks and blurs away, incoming grows in behind it. Interrupt it and it retargets from where it is. | `[Animation, Animation]` |
 | `reveal(targets, { stagger?, root? })` | Hides now, rises each element the first time it enters the viewport. | `() => void` disconnect |
 
-Every call cancels what was already running on that element, so rapid toggles stay clean. `rise`, `leave` and `morph` return the `Animation` objects: `await Promise.all(leave(el).map((a) => a.finished))` before you remove a node.
+Every motion is interruptible: a call on an element already in motion continues from where it is, so rapid toggles never snap. `rise`, `leave` and `morph` return the `Animation` objects: `await Promise.all(leave(el).map((a) => a.finished))` before you remove a node.
 
 Options say *where* and *when*: targets, stagger, delay, scroll root. *How* it moves is fixed. There is no `easing`, `duration` or `distance` option and there will not be one.
 

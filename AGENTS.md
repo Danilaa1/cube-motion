@@ -22,12 +22,12 @@ keyboard activation, which the function never did.
 - **Numbers live in `src/tokens.ts`** with the reason beside them.
 - **Reduced motion is checked inside every function at call time.** Opacity
   and colour stay, translate, scale and blur go, `press` dims instead.
-- **Cancel before animate, but start from where the element is.** Each
-  function clears the running animations on its elements first so
-  interruption never stacks fills. `morph` reads the computed opacity, scale
-  and filter before clearing, so an interrupted morph retargets like a CSS
-  transition instead of snapping to full size. Faces carry `will-change`
-  because blur repaints every frame.
+- **Interruptible, always.** Each function reads the computed values it
+  animates (`current` in `dom.ts`) before clearing what is running, and
+  starts from there, so an interrupted motion retargets like a CSS
+  transition. `rise` and `leave` do this only when the element is already
+  moving; at rest they start from their canonical hidden or shown state.
+  Faces carry `will-change` because blur repaints every frame.
 - **Exit belongs to the entrance.** `leave` is the mirror of `rise` and the
   adapters expose it as `show` on `Rise`, never as a separate wrapper.
   Svelte is the exception because `out:` already is that: rise and leave

@@ -60,6 +60,18 @@ describe("leave", () => {
     expect(again.cancelled).toBe(false);
   });
 
+  it("continues from the computed state when it interrupts a motion, and from hidden when it does not", () => {
+    const target = el();
+    target.style.opacity = "0.3";
+    target.style.translate = "0 4px";
+    rise(target);
+    expect(animationsOf(target)[0].keyframes).toEqual([{ opacity: 0, translate: "0 12px" }, { opacity: 1, translate: "0 0" }]);
+    leave(target);
+    expect((animationsOf(target)[1].keyframes as Keyframe[])[0]).toEqual({ opacity: "0.3", translate: "0 4px" });
+    rise(target);
+    expect((animationsOf(target)[2].keyframes as Keyframe[])[0]).toEqual({ opacity: "0.3", translate: "0 4px" });
+  });
+
   it("fades only under reduced motion", () => {
     setReduceMotion(true);
     const target = el();

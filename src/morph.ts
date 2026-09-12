@@ -1,23 +1,20 @@
-import { calm, clear } from "./dom.js";
+import { calm, clear, current } from "./dom.js";
 import { EASE, MORPH_BLUR, MORPH_SCALE, MS } from "./tokens.js";
 
 const shown = { opacity: 1, scale: 1, filter: "blur(0)" };
+const keys = ["opacity", "scale", "filter"] as const;
 
-// Start from wherever the face is right now, so a morph interrupted mid-flight
-// retargets like a CSS transition instead of snapping back to full size.
-const current = (el: Element) => {
-  const cs = getComputedStyle(el);
-  return { opacity: cs.opacity || "1", scale: cs.scale || "none", filter: cs.filter || "none" };
-};
-
-/** Cross-morph one face into another: outgoing shrinks and blurs away, incoming grows in behind it. */
+/**
+ * Cross-morph one face into another: outgoing shrinks and blurs away, incoming grows in
+ * behind it. Each face starts from where it is, so an interrupted morph retargets.
+ */
 export function morph(outgoing: Element, incoming: Element): [Animation, Animation] {
   const still = calm();
   const gone = still
     ? { opacity: 0, scale: 1, filter: "blur(0)" }
     : { opacity: 0, scale: MORPH_SCALE, filter: MORPH_BLUR };
-  const fromOut = current(outgoing);
-  const fromIn = current(incoming);
+  const fromOut = current(outgoing, [...keys]);
+  const fromIn = current(incoming, [...keys]);
   clear(outgoing);
   clear(incoming);
   return [

@@ -36,7 +36,7 @@ reveal(targets: Targets, options?: { stagger?: number; root?: Element | null }):
 - `morph`: outgoing to opacity 0, scale 0.25, blur 4px over 220ms. Incoming runs the reverse starting 130ms later. `fill: both`. Each face starts from its computed opacity, scale and filter, so interrupting a morph retargets smoothly.
 - `reveal`: sets `style.opacity = "0"` at once, observes with `rootMargin: "0px 0px -10% 0px"`, calls `rise` per element on first intersection with a 60ms stagger, then unobserves.
 
-Every function cancels running animations on its elements first, so rise after leave and leave after rise are safe at any moment. Every function reads `prefers-reduced-motion` at call time: translate, scale and blur are dropped, opacity stays.
+Every function is interruptible: it reads the element's computed state, cancels what is running, and animates from there, so rise after leave and leave after rise continue smoothly at any moment. Every function reads `prefers-reduced-motion` at call time: translate, scale and blur are dropped, opacity stays.
 
 One curve: `cubic-bezier(0.2, 0, 0, 1)`.
 
