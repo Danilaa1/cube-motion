@@ -30,7 +30,7 @@ makes the motion decisions so the caller does not.
 | --- | --- |
 | `src/tokens.ts` | every number and the curve |
 | `src/index.ts` | `rise`, `press`, `morph`, `reveal`, public types |
-| `src/react.ts` | one hook per job, effect-bound, StrictMode safe |
+| `src/react.ts` | one hook per job, one effect each |
 | `tests/setup.ts` | WAAPI, matchMedia and IntersectionObserver stand-ins for happy-dom |
 
 ## Definition of done

@@ -5,7 +5,9 @@ export interface Recorded {
   keyframes: Keyframe[] | PropertyIndexedKeyframes;
   options: KeyframeAnimationOptions;
   cancelled: boolean;
+  finishedEarly: boolean;
   cancel(): void;
+  finish(): void;
   finished: Promise<void>;
 }
 
@@ -28,8 +30,12 @@ export function install() {
       keyframes: keyframes as Keyframe[],
       options: options as KeyframeAnimationOptions,
       cancelled: false,
+      finishedEarly: false,
       cancel() {
         a.cancelled = true;
+      },
+      finish() {
+        a.finishedEarly = true;
       },
       finished: Promise.resolve(),
     };

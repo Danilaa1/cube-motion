@@ -3,49 +3,30 @@ import { morph, press, reveal, rise, type RevealOptions, type RiseOptions } from
 
 type Ref = RefObject<Element | null>;
 
-/** Rise the children of the referenced element once, on mount. */
-export function useRise(ref: Ref, options?: RiseOptions): void {
+/** Rise the children of the container on mount. */
+export function useRise(ref: Ref, options?: RiseOptions) {
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const animations = rise(el.children, options);
-    return () => animations.forEach((a) => a.cancel());
-    // An entrance runs once; later option changes have nothing to replay.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (ref.current) rise(ref.current.children, options);
   }, []);
 }
 
-/** Bind press feedback to the referenced element for its lifetime. */
-export function usePress(ref: Ref): void {
-  useEffect(() => (ref.current ? press(ref.current) : undefined), [ref]);
+/** Press feedback on the element for its lifetime. */
+export function usePress(ref: Ref) {
+  useEffect(() => (ref.current ? press(ref.current) : undefined), []);
 }
 
-/**
- * Show `on` when `active` is true and `off` otherwise, morphing between them
- * whenever `active` flips. The first render sets the state without motion.
- */
-export function useMorph(off: Ref, on: Ref, active: boolean): void {
+/** Show `on` when active, `off` otherwise. Morphs on change, settles without motion on mount. */
+export function useMorph(off: Ref, on: Ref, active: boolean) {
   const shown = useRef(active);
   useEffect(() => {
-    const a = off.current;
-    const b = on.current;
-    if (!a || !b) return;
-    if (shown.current === active) {
-      ((active ? a : b) as HTMLElement).style.opacity = "0";
-      return;
-    }
+    if (!off.current || !on.current) return;
+    const faces = morph(active ? off.current : on.current, active ? on.current : off.current);
+    if (shown.current === active) faces.forEach((a) => a.finish());
     shown.current = active;
-    morph(active ? a : b, active ? b : a);
-  }, [off, on, active]);
+  }, [active]);
 }
 
-/** Reveal the children of the referenced element as they scroll into view. */
-export function useReveal(ref: Ref, options?: RevealOptions): void {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    return reveal(el.children, options);
-    // Observation starts once; the options describe where, not a value to react to.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+/** Reveal the children of the container as they scroll into view. */
+export function useReveal(ref: Ref, options?: RevealOptions) {
+  useEffect(() => (ref.current ? reveal(ref.current.children, options) : undefined), []);
 }

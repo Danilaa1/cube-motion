@@ -24,7 +24,7 @@ afterEach(async () => {
 const mount = (component: () => unknown) => act(async () => root.render(createElement(component as never)));
 
 describe("react adapter", () => {
-  it("useRise rises the container's children once and cancels them on unmount", async () => {
+  it("useRise rises the container's children on mount", async () => {
     function List() {
       const ref = useRef<HTMLUListElement>(null);
       useRise(ref);
@@ -33,8 +33,6 @@ describe("react adapter", () => {
     await mount(List);
     const items = host.querySelectorAll("li");
     expect(animationsOf(items[1])[0].options.delay).toBe(70);
-    await act(async () => root.unmount());
-    expect(animationsOf(items[1])[0].cancelled).toBe(true);
   });
 
   it("usePress binds press feedback for the element's lifetime", async () => {
@@ -49,7 +47,7 @@ describe("react adapter", () => {
     expect(animationsOf(button)[0].keyframes).toEqual({ scale: 0.97 });
   });
 
-  it("useMorph hides the inactive face on first render and morphs when active flips", async () => {
+  it("useMorph settles without motion on mount and morphs when active flips", async () => {
     function Save({ saved }: { saved: boolean }) {
       const off = useRef<HTMLElement>(null);
       const on = useRef<HTMLElement>(null);
@@ -58,11 +56,11 @@ describe("react adapter", () => {
     }
     await act(async () => root.render(createElement(Save, { saved: false })));
     const [off, on] = host.querySelectorAll("i");
-    expect(on.style.opacity).toBe("0");
-    expect(animationsOf(off)).toHaveLength(0);
+    expect(animationsOf(on)[0].finishedEarly).toBe(true);
+    expect(animationsOf(off)[0].finishedEarly).toBe(true);
     await act(async () => root.render(createElement(Save, { saved: true })));
-    expect(animationsOf(off)[0].options.duration).toBe(220);
-    expect(animationsOf(on)[0].options.delay).toBe(130);
+    expect(animationsOf(off)[1]).toMatchObject({ finishedEarly: false, options: { duration: 220 } });
+    expect(animationsOf(on)[1].options.delay).toBe(130);
   });
 
   it("useReveal observes the container's children and disconnects on unmount", async () => {

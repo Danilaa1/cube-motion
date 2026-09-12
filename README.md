@@ -57,7 +57,7 @@ function SaveButton({ saved }) {
 | --- | --- |
 | `useRise(ref, options?)` | A container. Its children rise on mount. |
 | `usePress(ref)` | The pressable element. |
-| `useMorph(off, on, active)` | The two faces. The inactive one is hidden on first render, no motion. |
+| `useMorph(off, on, active)` | The two faces. Mount settles the state with no motion. |
 | `useReveal(ref, options?)` | A container. Its children reveal as they scroll in. |
 
 Each hook binds on mount and cleans up on unmount. React is an optional peer dependency; the core has none.

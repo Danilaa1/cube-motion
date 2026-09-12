@@ -35,7 +35,7 @@ import { useRise, usePress, useMorph, useReveal } from "cube-motion/react";
 
 useRise(ref, options?);            // ref: container; rises its children on mount
 usePress(ref);                     // ref: the pressable element
-useMorph(offRef, onRef, active);   // hides the inactive face on first render, morphs on change
+useMorph(offRef, onRef, active);   // settles on mount without motion, morphs on change
 useReveal(ref, options?);          // ref: container; reveals its children
 ```
 
@@ -50,4 +50,4 @@ The two faces must overlap. Stack them in a grid cell:
 .faces > * { grid-area: 1 / 1; }
 ```
 
-Hide the inactive face yourself in vanilla (`style.opacity = "0"` or a class); `useMorph` does it for you.
+Hide the inactive face yourself in vanilla (`style.opacity = "0"` or a class); `useMorph` settles it for you on mount.
