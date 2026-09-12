@@ -61,7 +61,7 @@ describe("components", () => {
     const wrapper = host.querySelector("span")!;
     const [off, on] = wrapper.children;
     expect([wrapper.style.position, wrapper.style.display]).toEqual(["relative", "inline-flex"]);
-    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["", "absolute", "0"]);
+    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["relative", "absolute", "0"]);
     expect(animationsOf(on)[0].finishedEarly).toBe(true);
     await render(createElement(Save, { saved: true }));
     expect(animationsOf(off)[1]).toMatchObject({ finishedEarly: false, options: { duration: 220 } });

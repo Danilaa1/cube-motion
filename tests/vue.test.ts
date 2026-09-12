@@ -55,7 +55,7 @@ describe("vue components", () => {
     const [off, on] = wrapper.children as unknown as HTMLElement[];
     expect([wrapper.style.position, wrapper.style.display]).toEqual(["relative", "inline-flex"]);
     expect([off.textContent, on.textContent]).toEqual(["Save", "Saved"]);
-    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["", "absolute", "0"]);
+    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["relative", "absolute", "0"]);
     saved.value = true;
     await nextTick();
     expect(animationsOf(off)[0].options.duration).toBe(220);

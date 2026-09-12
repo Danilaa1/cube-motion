@@ -42,7 +42,7 @@ describe("svelte actions", () => {
     on.appendChild(document.createElement("svg"));
     const action = morph(node, false)!;
     expect([node.style.position, node.style.display]).toEqual(["relative", "inline-flex"]);
-    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["", "absolute", "0"]);
+    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["relative", "absolute", "0"]);
     action.update!(false);
     expect(animationsOf(off)).toHaveLength(0);
     action.update!(true);

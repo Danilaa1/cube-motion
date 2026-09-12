@@ -85,7 +85,7 @@ describe("solid components", () => {
     const wrapper = host.querySelector("span")!;
     const [off, on] = wrapper.children as unknown as HTMLElement[];
     expect([wrapper.style.position, wrapper.style.display]).toEqual(["relative", "inline-flex"]);
-    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["", "absolute", "0"]);
+    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["relative", "absolute", "0"]);
     expect(animationsOf(off)).toHaveLength(0);
     setSaved(true);
     expect(animationsOf(off)[0].options.duration).toBe(220);
