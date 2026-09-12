@@ -80,7 +80,7 @@ interface MorphProps {
   on: JSX.Element;
 }
 
-const face = (shown: boolean) => `grid-area:1/1;opacity:${shown ? 1 : 0}`;
+const face = (shown: boolean) => `grid-area:1/1;will-change:opacity,filter,scale;opacity:${shown ? 1 : 0}`;
 
 /** Two stacked faces. Shows `on` when active, `off` otherwise, morphing between them. */
 export function Morph<T extends ValidComponent = "span">(props: Props<T, MorphProps>): JSX.Element {

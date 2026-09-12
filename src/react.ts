@@ -95,7 +95,7 @@ interface MorphProps {
   on: ReactNode;
 }
 
-const face = { gridArea: "1 / 1" };
+const face = { gridArea: "1 / 1", willChange: "opacity, filter, scale" };
 
 /** Two stacked faces. Shows `on` when active, `off` otherwise, morphing between them. */
 export const Morph = forwardRef<Element, Props<ElementType, MorphProps>>(

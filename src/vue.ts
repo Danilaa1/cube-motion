@@ -53,7 +53,7 @@ export const Rise = defineComponent({
   },
 });
 
-const face = (shown: boolean): StyleValue => ({ gridArea: "1 / 1", opacity: shown ? 1 : 0 });
+const face = (shown: boolean): StyleValue => ({ gridArea: "1 / 1", willChange: "opacity, filter, scale", opacity: shown ? 1 : 0 });
 
 /** Two stacked faces. Shows `on` when active, `off` otherwise, morphing between them. Faces come from props or the `off` and `on` slots. */
 export const Morph = defineComponent({

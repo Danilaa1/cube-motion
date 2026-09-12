@@ -82,6 +82,17 @@ describe("morph", () => {
     expect(firstOut.options).toMatchObject({ duration: 220, fill: "both" });
   });
 
+  it("starts each face from its computed state so an interrupted morph retargets", () => {
+    const off = el();
+    const on = el();
+    off.style.opacity = "0.4";
+    off.style.scale = "0.6";
+    off.style.filter = "blur(2px)";
+    morph(off, on);
+    expect((animationsOf(off)[0].keyframes as Keyframe[])[0]).toEqual({ opacity: "0.4", scale: "0.6", filter: "blur(2px)" });
+    expect((animationsOf(on)[0].keyframes as Keyframe[])[1]).toEqual({ opacity: 1, scale: 1, filter: "blur(0)" });
+  });
+
   it("fades only, with no lead, under reduced motion", () => {
     setReduceMotion(true);
     const off = el();

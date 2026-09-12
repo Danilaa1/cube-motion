@@ -42,7 +42,8 @@ export function leave(_node: Element, { delay = 0, index = 0 }: TransitionParams
   return { delay: delay + index * STAGGER.leave, duration: MS.leave, easing, css: fade };
 }
 
-const face = (el: Element, shown: boolean) => ((el as HTMLElement).style.cssText += `;grid-area:1/1;opacity:${shown ? 1 : 0}`);
+const face = (el: Element, shown: boolean) =>
+  ((el as HTMLElement).style.cssText += `;grid-area:1/1;will-change:opacity,filter,scale;opacity:${shown ? 1 : 0}`);
 
 /** `use:morph={active}` on an element whose two children are the off and on faces. */
 export const morph: Action<HTMLElement, boolean> = (node, active) => {

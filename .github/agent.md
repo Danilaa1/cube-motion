@@ -33,7 +33,7 @@ reveal(targets: Targets, options?: { stagger?: number; root?: Element | null }):
 
 - `rise`: opacity 0 to 1 with a 12px lift, 640ms, 70ms stagger, `fill: backwards`.
 - `leave`: opacity 1 to 0 with a 12px drop, 320ms, 40ms stagger, `fill: forwards`, so the element stays gone until removed or risen again.
-- `morph`: outgoing to opacity 0, scale 0.25, blur 4px over 220ms. Incoming runs the reverse starting 130ms later. `fill: both`.
+- `morph`: outgoing to opacity 0, scale 0.25, blur 4px over 220ms. Incoming runs the reverse starting 130ms later. `fill: both`. Each face starts from its computed opacity, scale and filter, so interrupting a morph retargets smoothly.
 - `reveal`: sets `style.opacity = "0"` at once, observes with `rootMargin: "0px 0px -10% 0px"`, calls `rise` per element on first intersection with a 60ms stagger, then unobserves.
 
 Every function cancels running animations on its elements first, so rise after leave and leave after rise are safe at any moment. Every function reads `prefers-reduced-motion` at call time: translate, scale and blur are dropped, opacity stays.
@@ -106,6 +106,8 @@ The two faces must overlap and the inactive one must start hidden:
 
 ```css
 .faces { display: inline-grid; }
-.faces > * { grid-area: 1 / 1; }
+.faces > * { grid-area: 1 / 1; will-change: opacity, filter, scale; }
 .faces > .hidden { opacity: 0; }
 ```
+
+`will-change` keeps the blur on its own layer. The framework components set it for you.

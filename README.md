@@ -36,7 +36,7 @@ Targets are a selector, one element, or anything iterable of elements.
 | --- | --- | --- |
 | `rise(targets, { stagger?, delay? })` | Fades each element in with a lift, one after another. | `Animation[]` |
 | `leave(targets, { stagger?, delay? })` | Fades each element out with a drop. The end state holds until you remove it. | `Animation[]` |
-| `morph(outgoing, incoming)` | Outgoing shrinks and blurs away, incoming grows in behind it. | `[Animation, Animation]` |
+| `morph(outgoing, incoming)` | Outgoing shrinks and blurs away, incoming grows in behind it. Interrupt it and it retargets from where it is. | `[Animation, Animation]` |
 | `reveal(targets, { stagger?, root? })` | Hides now, rises each element the first time it enters the viewport. | `() => void` disconnect |
 
 Every call cancels what was already running on that element, so rapid toggles stay clean. `rise`, `leave` and `morph` return the `Animation` objects: `await Promise.all(leave(el).map((a) => a.finished))` before you remove a node.
