@@ -30,19 +30,33 @@ There are no easing, duration or distance options. Do not add them; add a functi
 
 ## React
 
-```ts
-import { useRise, usePress, useMorph, useReveal } from "cube-motion/react";
+```tsx
+import { Rise, Press, Morph, Reveal } from "cube-motion/react";
 
+<Rise as?="div" stagger? delay? {...elementProps}>children</Rise>   // children rise on mount
+<Press as?="button" {...elementProps}>children</Press>               // press feedback on the element
+<Morph as?="span" active off on {...elementProps} />                 // shows `on` when active, morphs on change
+<Reveal as?="div" stagger? root? {...elementProps}>children</Reveal> // children reveal on scroll
+```
+
+Polymorphic: `as` is a tag name or a component that forwards its ref. All other
+props go to the element, typed for that tag. A caller `ref` is merged. `Morph`
+renders two `span` faces in an inline grid, both in cell `1 / 1`, the inactive
+one at `opacity: 0` from the first render; no CSS import needed.
+
+Hooks are exported for when you already own the element:
+
+```ts
 const ref = useRise(options?);      // attach to a container; its children rise on mount
 const ref = usePress();             // attach to the pressable element
 const [off, on] = useMorph(active); // attach to the two faces; settles on mount, morphs on change
 const ref = useReveal(options?);    // attach to a container; its children reveal on scroll
 ```
 
-Each hook creates and returns the ref it needs, generic over the element type
-(`usePress<HTMLButtonElement>()`). Hooks bind in `useEffect` and clean up on unmount. Safe under StrictMode. SSR safe: nothing touches the DOM until effects run.
+Each hook creates and returns its ref, generic over the element type
+(`usePress<HTMLButtonElement>()`). Hooks bind in `useEffect` and clean up on unmount.
 
-## Markup for morph
+## Markup for morph in vanilla
 
 The two faces must overlap. Stack them in a grid cell:
 
@@ -51,4 +65,4 @@ The two faces must overlap. Stack them in a grid cell:
 .faces > * { grid-area: 1 / 1; }
 ```
 
-Hide the inactive face yourself in vanilla (`style.opacity = "0"` or a class); `useMorph` settles it for you on mount.
+Hide the inactive face yourself (`style.opacity = "0"` or a class). The React `Morph` component does both for you.

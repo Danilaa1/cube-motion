@@ -43,23 +43,34 @@ There is no `easing`, `duration` or `distance` option and there will not be one.
 ## React
 
 ```tsx
-import { useRise, usePress, useMorph, useReveal } from "cube-motion/react";
+import { Rise, Press, Morph, Reveal } from "cube-motion/react";
 
-function SaveButton({ saved }) {
-  const button = usePress();
-  const [off, on] = useMorph(saved);   // morphs when saved flips
-  return <button ref={button}><i ref={off}>Save</i><i ref={on}>Saved</i></button>;
-}
+<Rise as="section" className="hero">
+  <h1>Four motions.</h1>
+  <p>No dials.</p>
+</Rise>
+
+<Press onClick={save}>
+  <Morph active={saved} off="Save" on="Saved" />
+</Press>
+
+<Reveal as="ul" className="cards">{cards}</Reveal>
 ```
 
-| Hook | Returns | Attach to |
-| --- | --- | --- |
-| `useRise(options?)` | ref | A container. Its children rise on mount. |
-| `usePress()` | ref | The pressable element. |
-| `useMorph(active)` | `[off, on]` refs | The two faces. Mount settles the state with no motion. |
-| `useReveal(options?)` | ref | A container. Its children reveal as they scroll in. |
+Each component renders the element you name with `as`, spreads every other prop onto it, and binds the motion. There is no wrapper: `Reveal` is your list, `Press` is your button.
 
-Each hook owns its ref, binds on mount and cleans up on unmount. React is an optional peer dependency; the core has none.
+| Component | Renders | Own props |
+| --- | --- | --- |
+| `Rise` | `div` | `stagger`, `delay`. Children rise on mount. |
+| `Press` | `button` | none. Keep it on things that are already interactive. |
+| `Morph` | `span` | `active`, `off`, `on`. Faces are stacked for you, the inactive one hidden from the first paint. |
+| `Reveal` | `div` | `stagger`, `root`. Children reveal as they scroll in. |
+
+`as` takes a tag or your own component (`as={Button}`, which must forward its ref on React 18). A `ref` you pass is merged with the one the component needs.
+
+Already own the element? The hooks underneath are exported too: `useRise`, `usePress`, `useMorph`, `useReveal`. Each creates and returns the ref it needs.
+
+React is an optional peer dependency; the core has none.
 
 ## Reduced motion
 

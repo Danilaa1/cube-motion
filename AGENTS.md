@@ -23,6 +23,9 @@ makes the motion decisions so the caller does not.
   its elements first so interruption never stacks fills.
 - **Return the handle.** `Animation` objects, or an unbind/disconnect
   function, so the caller can stop what it started.
+- **React components name elements, never looks.** `as` takes a tag or a
+  component. No `kind="card"`, no styling props, no motion props. A
+  component's own props are exactly the core function's options.
 
 ## Architecture
 
@@ -30,7 +33,7 @@ makes the motion decisions so the caller does not.
 | --- | --- |
 | `src/tokens.ts` | every number and the curve |
 | `src/index.ts` | `rise`, `press`, `morph`, `reveal`, public types |
-| `src/react.ts` | one hook per job, one effect each |
+| `src/react.ts` | four polymorphic components (`as`, props spread, ref merged) on top of one hook per job |
 | `tests/setup.ts` | WAAPI, matchMedia and IntersectionObserver stand-ins for happy-dom |
 
 ## Definition of done

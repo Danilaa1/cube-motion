@@ -1,8 +1,7 @@
-import { act } from "react";
-import { createElement } from "react";
+import { act, createElement, createRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { useMorph, usePress, useReveal, useRise } from "../src/react.js";
+import { Morph, Press, Reveal, Rise, useMorph, usePress, useReveal, useRise } from "../src/react.js";
 import { animationsOf, install, observed } from "./setup.js";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -21,20 +20,61 @@ afterEach(async () => {
   host.remove();
 });
 
-const mount = (component: () => unknown) => act(async () => root.render(createElement(component as never)));
+const render = (node: ReactElementLike) => act(async () => root.render(node as never));
+type ReactElementLike = ReturnType<typeof createElement>;
+const mount = (component: () => unknown) => render(createElement(component as never));
 
-describe("react adapter", () => {
+describe("components", () => {
+  it("Rise renders the element it is told to, spreads props, and rises its children", async () => {
+    await render(createElement(Rise, { as: "section", className: "hero", stagger: 40 } as never, createElement("h1"), createElement("p")));
+    const section = host.querySelector("section.hero")!;
+    expect(section).not.toBeNull();
+    expect(animationsOf(section.children[1])[0].options.delay).toBe(40);
+  });
+
+  it("Press renders a button by default, binds press, and merges the caller's ref", async () => {
+    const ref = createRef<Element>();
+    await render(createElement(Press, { ref, type: "button" } as never, "Save"));
+    const button = host.querySelector("button")!;
+    expect(ref.current).toBe(button);
+    expect(button.textContent).toBe("Save");
+    button.dispatchEvent(new Event("pointerdown"));
+    expect(animationsOf(button)[0].keyframes).toEqual({ scale: 0.97 });
+  });
+
+  it("Morph stacks two faces, hides the inactive one from the first paint, and morphs on change", async () => {
+    const Save = ({ saved }: { saved: boolean }) => createElement(Morph, { active: saved, off: "Save", on: "Saved" } as never);
+    await render(createElement(Save, { saved: false }));
+    const wrapper = host.querySelector("span")!;
+    const [off, on] = wrapper.querySelectorAll("span");
+    expect(wrapper.style.display).toBe("inline-grid");
+    expect([off.style.opacity, on.style.opacity]).toEqual(["1", "0"]);
+    expect(animationsOf(on)[0].finishedEarly).toBe(true);
+    await render(createElement(Save, { saved: true }));
+    expect(animationsOf(off)[1]).toMatchObject({ finishedEarly: false, options: { duration: 220 } });
+    expect(animationsOf(on)[1].options.delay).toBe(130);
+  });
+
+  it("Reveal observes its children and disconnects on unmount", async () => {
+    await render(createElement(Reveal, { as: "ul" } as never, createElement("li"), createElement("li")));
+    expect(observed).toHaveLength(2);
+    expect(host.querySelector("li")!.style.opacity).toBe("0");
+    await act(async () => root.unmount());
+    expect(observed).toHaveLength(0);
+  });
+});
+
+describe("hooks", () => {
   it("useRise rises the container's children on mount", async () => {
     function List() {
       const ref = useRise();
       return createElement("ul", { ref }, createElement("li"), createElement("li"));
     }
     await mount(List);
-    const items = host.querySelectorAll("li");
-    expect(animationsOf(items[1])[0].options.delay).toBe(70);
+    expect(animationsOf(host.querySelectorAll("li")[1])[0].options.delay).toBe(70);
   });
 
-  it("usePress binds press feedback for the element's lifetime", async () => {
+  it("usePress binds press feedback", async () => {
     function Button() {
       const ref = usePress();
       return createElement("button", { ref });
@@ -50,24 +90,19 @@ describe("react adapter", () => {
       const [off, on] = useMorph(saved);
       return createElement("span", null, createElement("i", { ref: off }, "Save"), createElement("i", { ref: on }, "Saved"));
     }
-    await act(async () => root.render(createElement(Save, { saved: false })));
+    await render(createElement(Save, { saved: false }));
     const [off, on] = host.querySelectorAll("i");
     expect(animationsOf(on)[0].finishedEarly).toBe(true);
-    expect(animationsOf(off)[0].finishedEarly).toBe(true);
-    await act(async () => root.render(createElement(Save, { saved: true })));
-    expect(animationsOf(off)[1]).toMatchObject({ finishedEarly: false, options: { duration: 220 } });
-    expect(animationsOf(on)[1].options.delay).toBe(130);
+    await render(createElement(Save, { saved: true }));
+    expect(animationsOf(off)[1].options.duration).toBe(220);
   });
 
-  it("useReveal observes the container's children and disconnects on unmount", async () => {
+  it("useReveal observes the container's children", async () => {
     function Cards() {
       const ref = useReveal();
-      return createElement("div", { ref }, createElement("article"), createElement("article"));
+      return createElement("div", { ref }, createElement("article"));
     }
     await mount(Cards);
-    expect(observed).toHaveLength(2);
-    expect(host.querySelector("article")!.style.opacity).toBe("0");
-    await act(async () => root.unmount());
-    expect(observed).toHaveLength(0);
+    expect(observed).toHaveLength(1);
   });
 });
