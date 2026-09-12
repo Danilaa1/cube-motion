@@ -1,6 +1,6 @@
 # cube-motion
 
-Four fixed UI motions on the Web Animations API. Zero dependencies. Optional React and Solid adapters. Nothing to tune: pick the job, name the element.
+Four fixed UI motions on the Web Animations API. Zero dependencies. Optional React, Vue, Solid and Svelte adapters. Nothing to tune: pick the job, name the element.
 
 ```
 npm i cube-motion
@@ -67,11 +67,36 @@ import { Rise, Morph, Reveal } from "cube-motion/solid";
 
 Same components and props. Solid conventions: `class`, `ref` as a variable or callback, reactive reads (`open()`, not `open`). Bindings happen in `onMount` and are released in `onCleanup`, so SSR is safe.
 
+## Vue
+
+```vue
+import { Rise, Morph, Reveal } from "cube-motion/vue";
+
+<Rise as?="div" :show?="true" :stagger? :delay? v-bind="attrs">children</Rise>
+<Morph as?="span" :active off? on? v-bind="attrs" />   <!-- or #off and #on slots -->
+<Reveal as?="div" :stagger? :root? v-bind="attrs">children</Reveal>
+```
+
+Render-function components, no SFC. `inheritAttrs` is off and attrs are spread onto the element: `class`, `style` and listeners all land on it. A template `ref` on the component gives the instance; read `.$el` for the element.
+
+## Svelte
+
+```svelte
+import { rise, leave, morph, reveal } from "cube-motion/svelte";
+
+<div in:rise out:leave>…</div>                     <!-- transitions; Svelte waits for out -->
+<li in:rise={{ index: i }}>…</li>                  <!-- index * stagger, or delay: ms -->
+<button use:morph={active}><i>off</i><i>on</i></button>  <!-- action; two children are the faces -->
+<ul use:reveal>…</ul>                               <!-- action; children reveal on scroll -->
+```
+
+No `show` prop: use `{#if}` with `in:rise out:leave`. The transitions evaluate the same curve in JS. Works on Svelte 4 and 5.
+
 ## Rules
 
 - Never add `duration`, `easing`, `distance` or `scale` options. If a motion feels wrong, the fix is a new job, not a knob.
 - Do not wrap a single button in `<Rise>` to press it. Use CSS.
-- Do not animate unmount by hand in React. Use `show`.
+- Do not animate unmount by hand. Use `show` in React, Vue and Solid, `out:leave` in Svelte.
 - In vanilla, remove a node only after `leave`'s animations have finished.
 - Do not import a stylesheet; there is none.
 

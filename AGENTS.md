@@ -12,8 +12,8 @@ keyboard activation, which the function never did.
 
 ## Invariants
 
-- **Zero runtime dependencies.** React and Solid are optional peers for
-  `./react` and `./solid`.
+- **Zero runtime dependencies.** React, Vue, Solid and Svelte are optional
+  peers for their subpath exports.
 - **No dials.** No function takes an easing, duration, distance or scale.
   A new job gets a new function. An option only ever says where or when
   (targets, stagger, delay, scroll root), never how.
@@ -27,6 +27,8 @@ keyboard activation, which the function never did.
   rise after leave and leave after rise safe mid-flight.
 - **Exit belongs to the entrance.** `leave` is the mirror of `rise` and the
   adapters expose it as `show` on `Rise`, never as a separate wrapper.
+  Svelte is the exception because `out:` already is that: rise and leave
+  are transitions there.
 - **One job per file.** A new job is a new `src/<job>.ts` plus one line in
   `index.ts`, one `describe` in `tests/`, one row in the README. Retiring
   is the same in reverse. The adapters stay whole; their shared plumbing is
@@ -46,6 +48,8 @@ keyboard activation, which the function never did.
 | `src/rise.ts`, `leave.ts`, `morph.ts`, `reveal.ts` | one job each, its options type beside it |
 | `src/index.ts` | the export list, nothing else |
 | `src/react.ts` | four polymorphic components (`as`, props spread, ref merged) on top of one hook per job |
+| `src/vue.ts` | the same components as `defineComponent` render functions, attrs spread by hand |
+| `src/svelte.ts` | rise and leave as transitions (the curve solved in JS from `EASE_POINTS`), morph and reveal as actions; Svelte owns exit through `out:` |
 | `src/solid.ts` | the same four components on `Dynamic`, no JSX so tsc is the only build; lifecycle in the component body because Solid applies `ref` outside the owner |
 | `tests/setup.ts` | WAAPI, matchMedia and IntersectionObserver stand-ins for happy-dom |
 | `scripts/skill.mjs` | writes `skills/cube-motion/SKILL.md` from `.github/agent.md` on build; edit the source, never the skill |

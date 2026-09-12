@@ -1,7 +1,8 @@
 // Every number the library uses. Durations are picked by job, never by feel,
 // and there is one curve, so nothing here is reachable from the public API.
 
-export const EASE = "cubic-bezier(0.2, 0, 0, 1)";
+export const EASE_POINTS = [0.2, 0, 0, 1] as const; // a strong ease-out; Svelte evaluates it in JS
+export const EASE = `cubic-bezier(${EASE_POINTS.join(", ")})`;
 
 export const MS = {
   enter: 640, // long enough for a stagger to read as a sequence

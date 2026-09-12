@@ -5,7 +5,9 @@
   <img src="https://img.shields.io/badge/dependencies-zero-22c55e" alt="zero dependencies">
   <img src="https://img.shields.io/bundlephobia/minzip/cube-motion?color=8b5cf6&label=size" alt="bundle size">
   <img src="https://img.shields.io/badge/react-✓-61dafb" alt="react">
+  <img src="https://img.shields.io/badge/vue-✓-42b883" alt="vue">
   <img src="https://img.shields.io/badge/solid-✓-2c4f7c" alt="solid">
+  <img src="https://img.shields.io/badge/svelte-✓-ff3e00" alt="svelte">
   <img src="https://img.shields.io/badge/typescript-✓-3178c6" alt="typescript">
 </p>
 
@@ -97,7 +99,45 @@ import { Rise, Morph, Reveal } from "cube-motion/solid";
 
 Same components, same props, Solid conventions: `class`, a `ref` variable or callback, reactive reads. Bindings are made in `onMount` and released in `onCleanup`, so nothing runs on the server.
 
-React and Solid are optional peer dependencies. The core has none.
+## 💚 Vue
+
+```vue
+<script setup>
+import { Rise, Morph, Reveal } from "cube-motion/vue";
+</script>
+
+<Rise as="section" class="hero"><h1>Four motions.</h1></Rise>
+<Rise :show="open" class="toast">Saved</Rise>
+<Morph :active="saved" off="Save" on="Saved" />
+<Reveal as="ul" class="cards"><li v-for="card in cards" /></Reveal>
+```
+
+Same components, same props. Faces can be strings or the `#off` and `#on` slots. Attrs fall through to the element.
+
+## 🧡 Svelte
+
+Svelte already owns enter and exit through `in:` and `out:`, so rise and leave are transitions and the framework waits for the exit before removing the node. morph and reveal are actions.
+
+```svelte
+<script>
+  import { rise, leave, morph, reveal } from "cube-motion/svelte";
+</script>
+
+{#if open}
+  <div class="toast" in:rise out:leave>Saved</div>
+{/if}
+
+{#each items as item, i}
+  <li in:rise={{ index: i }}>{item}</li>
+{/each}
+
+<button use:morph={saved}><i>Save</i><i>Saved</i></button>
+<ul use:reveal>…</ul>
+```
+
+`index` staggers list items by the job's own stagger. `use:morph` takes the element's two children as its faces and stacks them for you.
+
+All four frameworks are optional peer dependencies. The core has none.
 
 ## 👆 Press is CSS
 
