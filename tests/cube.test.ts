@@ -156,7 +156,7 @@ describe("morph", () => {
   it("eases the wrapper's width to the incoming face", () => {
     const { wrapper, off, on } = faces();
     let width = 80;
-    wrapper.getBoundingClientRect = () => ({ width } as DOMRect);
+    Object.defineProperty(wrapper, "offsetWidth", { get: () => width });
     off.textContent = "Copy";
     on.textContent = "Copied";
     const original = on.style;

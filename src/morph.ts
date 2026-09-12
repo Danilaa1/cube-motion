@@ -29,6 +29,9 @@ const prefix = (a: string, b: string) => {
 };
 
 const style = (el: Element) => (el as HTMLElement).style;
+// Layout width, not the painted box: a press transform mid-click would shrink the measurement
+// and the width would ease to a short target, then snap.
+const width = (el: Element) => (el as HTMLElement).offsetWidth ?? el.getBoundingClientRect().width;
 const run = (el: Element, to: Keyframe, keys: Parameters<typeof current>[1], duration: number, delay = 0) => {
   const from = current(el, keys);
   clear(el);
@@ -45,7 +48,7 @@ const run = (el: Element, to: Keyframe, keys: Parameters<typeof current>[1], dur
 export function morph(outgoing: Element, incoming: Element): Animation[] {
   const still = calm();
   const wrapper = outgoing.parentElement;
-  const before = wrapper?.getBoundingClientRect().width ?? 0;
+  const before = wrapper ? width(wrapper) : 0;
 
   // The incoming face takes the flow; the outgoing one floats over it. Both are set
   // explicitly so a class that hid the face at first paint cannot reassert itself.
@@ -83,7 +86,7 @@ export function morph(outgoing: Element, incoming: Element): Animation[] {
   }
 
   if (wrapper) {
-    const after = wrapper.getBoundingClientRect().width;
+    const after = width(wrapper);
     if (before && after && before !== after && !still) {
       clear(wrapper);
       animations.push(wrapper.animate([{ width: `${before}px` }, { width: `${after}px` }], { duration: MS.fit, easing: EASE }));
