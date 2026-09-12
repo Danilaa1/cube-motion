@@ -1,5 +1,5 @@
 import { act } from "react";
-import { createElement, useRef } from "react";
+import { createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useMorph, usePress, useReveal, useRise } from "../src/react.js";
@@ -26,8 +26,7 @@ const mount = (component: () => unknown) => act(async () => root.render(createEl
 describe("react adapter", () => {
   it("useRise rises the container's children on mount", async () => {
     function List() {
-      const ref = useRef<HTMLUListElement>(null);
-      useRise(ref);
+      const ref = useRise();
       return createElement("ul", { ref }, createElement("li"), createElement("li"));
     }
     await mount(List);
@@ -37,8 +36,7 @@ describe("react adapter", () => {
 
   it("usePress binds press feedback for the element's lifetime", async () => {
     function Button() {
-      const ref = useRef<HTMLButtonElement>(null);
-      usePress(ref);
+      const ref = usePress();
       return createElement("button", { ref });
     }
     await mount(Button);
@@ -49,9 +47,7 @@ describe("react adapter", () => {
 
   it("useMorph settles without motion on mount and morphs when active flips", async () => {
     function Save({ saved }: { saved: boolean }) {
-      const off = useRef<HTMLElement>(null);
-      const on = useRef<HTMLElement>(null);
-      useMorph(off, on, saved);
+      const [off, on] = useMorph(saved);
       return createElement("span", null, createElement("i", { ref: off }, "Save"), createElement("i", { ref: on }, "Saved"));
     }
     await act(async () => root.render(createElement(Save, { saved: false })));
@@ -65,8 +61,7 @@ describe("react adapter", () => {
 
   it("useReveal observes the container's children and disconnects on unmount", async () => {
     function Cards() {
-      const ref = useRef<HTMLDivElement>(null);
-      useReveal(ref);
+      const ref = useReveal();
       return createElement("div", { ref }, createElement("article"), createElement("article"));
     }
     await mount(Cards);

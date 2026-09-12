@@ -46,21 +46,20 @@ There is no `easing`, `duration` or `distance` option and there will not be one.
 import { useRise, usePress, useMorph, useReveal } from "cube-motion/react";
 
 function SaveButton({ saved }) {
-  const ref = useRef(null), off = useRef(null), on = useRef(null);
-  usePress(ref);
-  useMorph(off, on, saved);      // runs when saved flips
-  return <button ref={ref}><i ref={off}>Save</i><i ref={on}>Saved</i></button>;
+  const button = usePress();
+  const [off, on] = useMorph(saved);   // morphs when saved flips
+  return <button ref={button}><i ref={off}>Save</i><i ref={on}>Saved</i></button>;
 }
 ```
 
-| Hook | Ref points at |
-| --- | --- |
-| `useRise(ref, options?)` | A container. Its children rise on mount. |
-| `usePress(ref)` | The pressable element. |
-| `useMorph(off, on, active)` | The two faces. Mount settles the state with no motion. |
-| `useReveal(ref, options?)` | A container. Its children reveal as they scroll in. |
+| Hook | Returns | Attach to |
+| --- | --- | --- |
+| `useRise(options?)` | ref | A container. Its children rise on mount. |
+| `usePress()` | ref | The pressable element. |
+| `useMorph(active)` | `[off, on]` refs | The two faces. Mount settles the state with no motion. |
+| `useReveal(options?)` | ref | A container. Its children reveal as they scroll in. |
 
-Each hook binds on mount and cleans up on unmount. React is an optional peer dependency; the core has none.
+Each hook owns its ref, binds on mount and cleans up on unmount. React is an optional peer dependency; the core has none.
 
 ## Reduced motion
 

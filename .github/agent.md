@@ -33,13 +33,14 @@ There are no easing, duration or distance options. Do not add them; add a functi
 ```ts
 import { useRise, usePress, useMorph, useReveal } from "cube-motion/react";
 
-useRise(ref, options?);            // ref: container; rises its children on mount
-usePress(ref);                     // ref: the pressable element
-useMorph(offRef, onRef, active);   // settles on mount without motion, morphs on change
-useReveal(ref, options?);          // ref: container; reveals its children
+const ref = useRise(options?);      // attach to a container; its children rise on mount
+const ref = usePress();             // attach to the pressable element
+const [off, on] = useMorph(active); // attach to the two faces; settles on mount, morphs on change
+const ref = useReveal(options?);    // attach to a container; its children reveal on scroll
 ```
 
-Hooks bind in `useEffect` and clean up on unmount. Safe under StrictMode. SSR safe: nothing touches the DOM until effects run.
+Each hook creates and returns the ref it needs, generic over the element type
+(`usePress<HTMLButtonElement>()`). Hooks bind in `useEffect` and clean up on unmount. Safe under StrictMode. SSR safe: nothing touches the DOM until effects run.
 
 ## Markup for morph
 
