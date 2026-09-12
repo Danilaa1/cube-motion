@@ -22,6 +22,10 @@ makes the motion decisions so the caller does not.
   and colour stay, translate, scale and blur go, `press` dims instead.
 - **Cancel before animate.** Each function clears the running animations on
   its elements first so interruption never stacks fills.
+- **One job per file.** A new job is a new `src/<job>.ts` plus one line in
+  `index.ts`, one `describe` in `tests/`, one row in the README. Retiring
+  is the same in reverse. The adapters stay whole; their shared plumbing is
+  the point of reading them together.
 - **Return the handle.** `Animation` objects, or an unbind/disconnect
   function, so the caller can stop what it started.
 - **React components name elements, never looks.** `as` takes a tag or a
@@ -33,7 +37,9 @@ makes the motion decisions so the caller does not.
 | File | Owns |
 | --- | --- |
 | `src/tokens.ts` | every number and the curve |
-| `src/index.ts` | `rise`, `press`, `morph`, `reveal`, public types |
+| `src/dom.ts` | `Targets`, `calm`, `list`, `clear`; keep it to helpers more than one job uses |
+| `src/rise.ts`, `press.ts`, `morph.ts`, `reveal.ts` | one job each, its options type beside it |
+| `src/index.ts` | the export list, nothing else |
 | `src/react.ts` | four polymorphic components (`as`, props spread, ref merged) on top of one hook per job |
 | `src/solid.ts` | the same four components on `Dynamic`, no JSX so tsc is the only build; lifecycle in the component body because Solid applies `ref` outside the owner |
 | `tests/setup.ts` | WAAPI, matchMedia and IntersectionObserver stand-ins for happy-dom |
