@@ -54,17 +54,28 @@ describe("components", () => {
     expect(animationsOf(host.querySelector("p")!)[0].options.duration).toBe(640);
   });
 
-  it("Morph stacks two faces, hides the inactive one from the first paint, and morphs on change", async () => {
-    const Save = ({ saved }: { saved: boolean }) => createElement(Morph, { active: saved, off: "Save", on: "Saved" } as never);
+  it("Morph lays out two faces, floats the inactive one hidden from the first paint, and crossfades element faces on change", async () => {
+    const Save = ({ saved }: { saved: boolean }) =>
+      createElement(Morph, { active: saved, off: createElement("i", null, "Save"), on: createElement("i", null, "Saved") } as never);
     await render(createElement(Save, { saved: false }));
     const wrapper = host.querySelector("span")!;
-    const [off, on] = wrapper.querySelectorAll("span");
-    expect(wrapper.style.display).toBe("inline-grid");
-    expect([off.style.opacity, on.style.opacity]).toEqual(["1", "0"]);
+    const [off, on] = wrapper.children;
+    expect([wrapper.style.position, wrapper.style.display]).toEqual(["relative", "inline-flex"]);
+    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["", "absolute", "0"]);
     expect(animationsOf(on)[0].finishedEarly).toBe(true);
     await render(createElement(Save, { saved: true }));
     expect(animationsOf(off)[1]).toMatchObject({ finishedEarly: false, options: { duration: 220 } });
     expect(animationsOf(on)[1].options.delay).toBe(130);
+  });
+
+  it("Morph with string faces morphs letter by letter and keeps the shared prefix still", async () => {
+    const Save = ({ saved }: { saved: boolean }) => createElement(Morph, { active: saved, off: "Save", on: "Saved" } as never);
+    await render(createElement(Save, { saved: false }));
+    await render(createElement(Save, { saved: true }));
+    const [off, on] = host.querySelector("span")!.children;
+    expect([...on.children].map((c) => c.textContent).join("")).toBe("Saved");
+    expect((off.children[0] as HTMLElement).style.opacity).toBe("0");
+    expect(animationsOf(on.children[4]).at(-1)!.options.delay).toBe(60);
   });
 
   it("Reveal observes its children and disconnects on unmount", async () => {
@@ -89,7 +100,7 @@ describe("hooks", () => {
   it("useMorph settles without motion on mount and morphs when active flips", async () => {
     function Save({ saved }: { saved: boolean }) {
       const [off, on] = useMorph(saved);
-      return createElement("span", null, createElement("i", { ref: off }, "Save"), createElement("i", { ref: on }, "Saved"));
+      return createElement("span", null, createElement("i", { ref: off }, createElement("svg")), createElement("i", { ref: on }, createElement("svg")));
     }
     await render(createElement(Save, { saved: false }));
     const [off, on] = host.querySelectorAll("i");

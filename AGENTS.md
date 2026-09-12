@@ -28,6 +28,13 @@ keyboard activation, which the function never did.
   transition. `rise` and `leave` do this only when the element is already
   moving; at rest they start from their canonical hidden or shown state.
   Faces carry `will-change` because blur repaints every frame.
+- **Morph is content-aware, never split by content.** One function decides
+  from what it is given: text faces diff per character, other faces
+  crossfade, the parent's width follows either way. There is no
+  `morph/text` or `morph/icons`; the reference (Daniel's Copy to Copied
+  recording, 2026-09-12) changes every layer on overlapping clocks and a
+  split would hand that coordination back to the caller. Width is the one
+  layout property the library animates.
 - **Exit belongs to the entrance.** `leave` is the mirror of `rise` and the
   adapters expose it as `show` on `Rise`, never as a separate wrapper.
   Svelte is the exception because `out:` already is that: rise and leave

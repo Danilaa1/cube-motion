@@ -27,13 +27,13 @@ type Targets = string | Element | Iterable<Element>;
 
 rise(targets: Targets, options?: { stagger?: number; delay?: number }): Animation[];
 leave(targets: Targets, options?: { stagger?: number; delay?: number }): Animation[];
-morph(outgoing: Element, incoming: Element): [Animation, Animation];
+morph(outgoing: Element, incoming: Element): Animation[];
 reveal(targets: Targets, options?: { stagger?: number; root?: Element | null }): () => void; // disconnect
 ```
 
 - `rise`: opacity 0 to 1 with a 12px lift, 640ms, 70ms stagger, `fill: backwards`.
 - `leave`: opacity 1 to 0 with a 12px drop, 320ms, 40ms stagger, `fill: forwards`, so the element stays gone until removed or risen again.
-- `morph`: outgoing to opacity 0, scale 0.25, blur 4px over 220ms. Incoming runs the reverse starting 130ms later. `fill: both`. Each face starts from its computed opacity, scale and filter, so interrupting a morph retargets smoothly.
+- `morph`: content-aware. If both faces hold only text, each is split into per-character spans (`aria-label` on the face, spans `aria-hidden`), the shared leading letters stay still, the remaining outgoing letters blur out (180ms each, 35ms stagger) and the incoming ones blur in starting 60ms later. Otherwise the outgoing face goes to opacity 0, scale 0.8, blur 4px over 220ms and the incoming runs the reverse from 130ms. The outgoing face is set `position: absolute; inset: 0` and the incoming returns to the flow, so the parent (made `position: relative` if static) sizes to the incoming face; its width is eased over 400ms. Every piece starts from its computed state, so interruptions retarget.
 - `reveal`: sets `style.opacity = "0"` at once, observes with `rootMargin: "0px 0px -10% 0px"`, calls `rise` per element on first intersection with a 60ms stagger, then unobserves.
 
 Every function is interruptible: it reads the element's computed state, cancels what is running, and animates from there, so rise after leave and leave after rise continue smoothly at any moment. Every function reads `prefers-reduced-motion` at call time: translate, scale and blur are dropped, opacity stays.
@@ -102,12 +102,12 @@ No `show` prop: use `{#if}` with `in:rise out:leave`. The transitions evaluate t
 
 ## Morph faces in vanilla
 
-The two faces must overlap and the inactive one must start hidden:
+Give the two faces one parent. The active face sits in the flow and sizes the parent; the inactive one floats over it, hidden:
 
 ```css
-.faces { display: inline-grid; }
-.faces > * { grid-area: 1 / 1; will-change: opacity, filter, scale; }
-.faces > .hidden { opacity: 0; }
+.faces { position: relative; display: inline-flex; align-items: center; }
+.faces > * { display: inline-flex; align-items: center; white-space: nowrap; will-change: opacity, filter, scale; }
+.faces > .hidden { position: absolute; inset: 0; opacity: 0; }
 ```
 
-`will-change` keeps the blur on its own layer. The framework components set it for you.
+`morph` swaps which face is in the flow on every call. `white-space: nowrap` keeps a text face from wrapping while the width eases. The framework components set all of this for you.

@@ -78,14 +78,14 @@ describe("solid components", () => {
         get active() {
           return saved();
         },
-        off: "Save",
-        on: "Saved",
+        off: (() => { const i = document.createElement("i"); i.textContent = "Save"; return i; })(),
+        on: (() => { const i = document.createElement("i"); i.textContent = "Saved"; return i; })(),
       } as never),
     );
     const wrapper = host.querySelector("span")!;
-    const [off, on] = wrapper.querySelectorAll("span");
-    expect(wrapper.style.display).toBe("inline-grid");
-    expect([off.style.opacity, on.style.opacity]).toEqual(["1", "0"]);
+    const [off, on] = wrapper.children as unknown as HTMLElement[];
+    expect([wrapper.style.position, wrapper.style.display]).toEqual(["relative", "inline-flex"]);
+    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["", "absolute", "0"]);
     expect(animationsOf(off)).toHaveLength(0);
     setSaved(true);
     expect(animationsOf(off)[0].options.duration).toBe(220);

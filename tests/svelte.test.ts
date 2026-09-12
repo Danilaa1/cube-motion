@@ -38,9 +38,11 @@ describe("svelte actions", () => {
     const node = el();
     const off = node.appendChild(document.createElement("i"));
     const on = node.appendChild(document.createElement("i"));
+    off.appendChild(document.createElement("svg"));
+    on.appendChild(document.createElement("svg"));
     const action = morph(node, false)!;
-    expect(node.style.display).toBe("inline-grid");
-    expect([off.style.opacity, on.style.opacity]).toEqual(["1", "0"]);
+    expect([node.style.position, node.style.display]).toEqual(["relative", "inline-flex"]);
+    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["", "absolute", "0"]);
     action.update!(false);
     expect(animationsOf(off)).toHaveLength(0);
     action.update!(true);

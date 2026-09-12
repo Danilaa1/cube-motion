@@ -53,7 +53,15 @@ export const Rise = defineComponent({
   },
 });
 
-const face = (shown: boolean): StyleValue => ({ gridArea: "1 / 1", willChange: "opacity, filter, scale", opacity: shown ? 1 : 0 });
+// The active face sits in the flow and sizes the wrapper; the inactive one floats over it.
+const wrap: StyleValue = { position: "relative", display: "inline-flex", alignItems: "center" };
+const face = (shown: boolean): StyleValue => ({
+  display: "inline-flex",
+  alignItems: "center",
+  whiteSpace: "nowrap",
+  willChange: "opacity, filter, scale",
+  ...(shown ? {} : { position: "absolute", inset: 0, opacity: 0 }),
+});
 
 /** Two stacked faces. Shows `on` when active, `off` otherwise, morphing between them. Faces come from props or the `off` and `on` slots. */
 export const Morph = defineComponent({
@@ -74,7 +82,7 @@ export const Morph = defineComponent({
       (active) => a.value && b.value && morph(active ? a.value : b.value, active ? b.value : a.value),
     );
     return () =>
-      h(props.as as string, { ...attrs, style: [{ display: "inline-grid" }, attrs.style as StyleValue] }, [
+      h(props.as as string, { ...attrs, style: [wrap, attrs.style as StyleValue] }, [
         h("span", { ref: a, style: face(!shownAtMount) }, slots.off?.() ?? props.off),
         h("span", { ref: b, style: face(shownAtMount) }, slots.on?.() ?? props.on),
       ]);

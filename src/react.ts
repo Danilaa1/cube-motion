@@ -95,7 +95,15 @@ interface MorphProps {
   on: ReactNode;
 }
 
-const face = { gridArea: "1 / 1", willChange: "opacity, filter, scale" };
+// The active face sits in the flow and sizes the wrapper; the inactive one floats over it.
+const wrap = { position: "relative", display: "inline-flex", alignItems: "center" } as const;
+const face = (shown: boolean) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  whiteSpace: "nowrap",
+  willChange: "opacity, filter, scale",
+  ...(shown ? {} : { position: "absolute", inset: 0, opacity: 0 }),
+});
 
 /** Two stacked faces. Shows `on` when active, `off` otherwise, morphing between them. */
 export const Morph = forwardRef<Element, Props<ElementType, MorphProps>>(
@@ -104,9 +112,9 @@ export const Morph = forwardRef<Element, Props<ElementType, MorphProps>>(
     const [shownAtMount] = useState(active);
     return createElement(
       as,
-      { ...rest, ref, style: { display: "inline-grid", ...style } },
-      createElement("span", { ref: a, style: { ...face, opacity: shownAtMount ? 0 : 1 } }, off),
-      createElement("span", { ref: b, style: { ...face, opacity: shownAtMount ? 1 : 0 } }, on),
+      { ...rest, ref, style: { ...wrap, ...style } },
+      createElement("span", { ref: a, style: face(!shownAtMount) }, off),
+      createElement("span", { ref: b, style: face(shownAtMount) }, on),
     );
   },
 ) as unknown as Poly<"span", MorphProps>;

@@ -81,34 +81,85 @@ describe("leave", () => {
 });
 
 describe("morph", () => {
-  it("shrinks and blurs the outgoing face, leads the incoming by 130ms, and cancels what ran before", () => {
-    const off = el();
-    const on = el();
+  const faces = () => {
+    const wrapper = el();
+    const off = wrapper.appendChild(document.createElement("span"));
+    const on = wrapper.appendChild(document.createElement("span"));
+    return { wrapper, off, on };
+  };
+
+  it("crossfades element faces: outgoing blurs and shrinks slightly, incoming leads 130ms later, and previous runs are cancelled", () => {
+    const { off, on } = faces();
+    off.appendChild(document.createElement("svg"));
+    on.appendChild(document.createElement("svg"));
     morph(off, on);
     morph(on, off);
     const [firstIn] = animationsOf(on);
     expect(firstIn.options.delay).toBe(130);
     expect(firstIn.cancelled).toBe(true);
     const [firstOut] = animationsOf(off);
-    expect((firstOut.keyframes as Keyframe[])[1]).toEqual({ opacity: 0, scale: 0.25, filter: "blur(4px)" });
+    expect((firstOut.keyframes as Keyframe[])[1]).toEqual({ opacity: 0, scale: 0.8, filter: "blur(4px)" });
     expect(firstOut.options).toMatchObject({ duration: 220, fill: "both" });
   });
 
-  it("starts each face from its computed state so an interrupted morph retargets", () => {
-    const off = el();
-    const on = el();
-    off.style.opacity = "0.4";
-    off.style.scale = "0.6";
-    off.style.filter = "blur(2px)";
+  it("puts the outgoing face out of flow and the incoming face in it", () => {
+    const { wrapper, off, on } = faces();
     morph(off, on);
-    expect((animationsOf(off)[0].keyframes as Keyframe[])[0]).toEqual({ opacity: "0.4", scale: "0.6", filter: "blur(2px)" });
-    expect((animationsOf(on)[0].keyframes as Keyframe[])[1]).toEqual({ opacity: 1, scale: 1, filter: "blur(0)" });
+    expect(wrapper.style.position).toBe("relative");
+    expect([off.style.position, on.style.position]).toEqual(["absolute", ""]);
+    morph(on, off);
+    expect([off.style.position, on.style.position]).toEqual(["", "absolute"]);
   });
 
-  it("fades only, with no lead, under reduced motion", () => {
+  it("diffs text faces per character: the shared prefix stays, the rest blur out and in, staggered", () => {
+    const { off, on } = faces();
+    off.textContent = "Copy";
+    on.textContent = "Copied";
+    morph(off, on);
+    const outChars = [...off.children] as HTMLElement[];
+    const inChars = [...on.children] as HTMLElement[];
+    expect(outChars.map((c) => c.textContent).join("")).toBe("Copy");
+    expect(inChars.map((c) => c.textContent).join("")).toBe("Copied");
+    expect(on.getAttribute("aria-label")).toBe("Copied");
+    expect(outChars.slice(0, 3).map((c) => c.style.opacity)).toEqual(["0", "0", "0"]);
+    expect(animationsOf(outChars[2])).toHaveLength(0);
+    expect(animationsOf(outChars[3])[0]).toMatchObject({ options: { duration: 180, delay: 0 } });
+    expect((animationsOf(outChars[3])[0].keyframes as Keyframe[])[1]).toEqual({ opacity: 0, filter: "blur(4px)" });
+    expect(animationsOf(inChars[3])[0].options.delay).toBe(60);
+    expect(animationsOf(inChars[5])[0].options.delay).toBe(60 + 2 * 35);
+    expect(animationsOf(inChars[0])[0].options.delay).toBe(0);
+  });
+
+  it("reuses the character spans on the way back", () => {
+    const { off, on } = faces();
+    off.textContent = "Copy";
+    on.textContent = "Copied";
+    morph(off, on);
+    const spans = [...on.children];
+    morph(on, off);
+    expect([...on.children]).toEqual(spans);
+    expect(animationsOf(spans[5] as Element).at(-1)!.options.delay).toBe(2 * 35);
+  });
+
+  it("eases the wrapper's width to the incoming face", () => {
+    const { wrapper, off, on } = faces();
+    let width = 80;
+    wrapper.getBoundingClientRect = () => ({ width } as DOMRect);
+    off.textContent = "Copy";
+    on.textContent = "Copied";
+    const original = on.style;
+    Object.defineProperty(on, "style", { get: () => { width = 100; return original; } });
+    morph(off, on);
+    const fit = animationsOf(wrapper)[0];
+    expect(fit.keyframes).toEqual([{ width: "80px" }, { width: "100px" }]);
+    expect(fit.options).toMatchObject({ duration: 400 });
+  });
+
+  it("fades only, with no lead and no blur, under reduced motion", () => {
     setReduceMotion(true);
-    const off = el();
-    const on = el();
+    const { off, on } = faces();
+    off.appendChild(document.createElement("svg"));
+    on.appendChild(document.createElement("svg"));
     morph(off, on);
     expect((animationsOf(off)[0].keyframes as Keyframe[])[1]).toEqual({ opacity: 0, scale: 1, filter: "blur(0)" });
     expect(animationsOf(on)[0].options.delay).toBe(0);

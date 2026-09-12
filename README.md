@@ -36,7 +36,7 @@ Targets are a selector, one element, or anything iterable of elements.
 | --- | --- | --- |
 | `rise(targets, { stagger?, delay? })` | Fades each element in with a lift, one after another. | `Animation[]` |
 | `leave(targets, { stagger?, delay? })` | Fades each element out with a drop. The end state holds until you remove it. | `Animation[]` |
-| `morph(outgoing, incoming)` | Outgoing shrinks and blurs away, incoming grows in behind it. Interrupt it and it retargets from where it is. | `[Animation, Animation]` |
+| `morph(outgoing, incoming)` | Content-aware. Text faces diff per character: shared leading letters stay still, the rest blur out and in, staggered. Other faces crossfade under a blur. The parent's width follows. | `Animation[]` |
 | `reveal(targets, { stagger?, root? })` | Hides now, rises each element the first time it enters the viewport. | `() => void` disconnect |
 
 Every motion is interruptible: a call on an element already in motion continues from where it is, so rapid toggles never snap. `rise`, `leave` and `morph` return the `Animation` objects: `await Promise.all(leave(el).map((a) => a.finished))` before you remove a node.
@@ -51,7 +51,9 @@ The numbers are the product. Each one is a decision you no longer have to make, 
 | --- | --- | --- |
 | rise | 640ms, 12px lift, 70ms stagger | Long enough that five staggered elements read as a sequence instead of a flicker, and five of them still land inside a second. 12px is the smallest lift that reads as arriving rather than fading. |
 | leave | 320ms, 12px drop, 40ms stagger | Half the entrance. The user has already decided to move on, so the exit gets out of the way. The drop mirrors the lift so enter and exit read as one gesture. |
-| morph | 220ms, scale 0.25, blur 4px, incoming starts 130ms in | Short enough to feel like one object changing state. The blur hides the frame where both faces overlap. The incoming face is already growing before the outgoing one is gone, so there is never an empty frame. |
+| morph, faces | 220ms, scale 0.8, blur 4px, incoming starts 130ms in | Short enough to feel like one object changing state. The blur hides the frame where both faces overlap and the slight shrink reads as focus pulling, not a pop. The incoming face is already growing before the outgoing one is gone, so there is never an empty frame. |
+| morph, text | 180ms per letter, 35ms stagger, incoming starts 60ms in | Only the letters that change move. The stagger runs left to right so the word reads as rewritten, not replaced. |
+| morph, width | 400ms | The parent eases to the new face's width, slower than the letters, so the edge trails them and never leads. |
 | reveal | rise at 60ms stagger, fires 10% inside the viewport edge | Elements animate when they are genuinely in view, not while they touch the edge. Scroll already spaces them, so the stagger is tighter than a page load. |
 | curve | `cubic-bezier(0.2, 0, 0, 1)` | A strong ease-out. Fast start so the interface answers at once, long settle so nothing snaps. One curve everywhere so every motion feels like the same hand. |
 
@@ -83,7 +85,7 @@ Each component renders the element you name with `as`, spreads every other prop 
 | Component | Renders | Own props |
 | --- | --- | --- |
 | `Rise` | `div` | `show`, `stagger`, `delay`. Children rise on mount. With `show`, they leave and then unmount when it turns false. |
-| `Morph` | `span` | `active`, `off`, `on`. Faces are stacked for you, the inactive one hidden from the first paint. |
+| `Morph` | `span` | `active`, `off`, `on`. Strings morph letter by letter; anything else crossfades. The wrapper takes the active face's width and eases to the next. |
 | `Reveal` | `div` | `stagger`, `root`. Children reveal as they scroll in. |
 
 `as` takes a tag or your own component. A `ref` you pass is merged. Already own the element? `useRise`, `useMorph` and `useReveal` are exported too, each returning the ref it needs.

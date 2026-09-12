@@ -50,12 +50,12 @@ describe("vue components", () => {
 
   it("Morph stacks two faces from props or slots, hides the inactive one, and morphs on change", async () => {
     const saved = ref(false);
-    mount(() => h(Morph, { active: saved.value, off: "Save" }, { on: () => "Saved" }));
+    mount(() => h(Morph, { active: saved.value, off: "Save" }, { on: () => h("i", "Saved") }));
     const wrapper = host.querySelector("span")!;
-    const [off, on] = wrapper.querySelectorAll("span");
-    expect(wrapper.style.display).toBe("inline-grid");
+    const [off, on] = wrapper.children as unknown as HTMLElement[];
+    expect([wrapper.style.position, wrapper.style.display]).toEqual(["relative", "inline-flex"]);
     expect([off.textContent, on.textContent]).toEqual(["Save", "Saved"]);
-    expect([off.style.opacity, on.style.opacity]).toEqual(["1", "0"]);
+    expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["", "absolute", "0"]);
     saved.value = true;
     await nextTick();
     expect(animationsOf(off)[0].options.duration).toBe(220);

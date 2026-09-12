@@ -80,7 +80,10 @@ interface MorphProps {
   on: JSX.Element;
 }
 
-const face = (shown: boolean) => `grid-area:1/1;will-change:opacity,filter,scale;opacity:${shown ? 1 : 0}`;
+// The active face sits in the flow and sizes the wrapper; the inactive one floats over it.
+const WRAP = "position:relative;display:inline-flex;align-items:center";
+const face = (shown: boolean) =>
+  `display:inline-flex;align-items:center;white-space:nowrap;will-change:opacity,filter,scale${shown ? "" : ";position:absolute;inset:0;opacity:0"}`;
 
 /** Two stacked faces. Shows `on` when active, `off` otherwise, morphing between them. */
 export function Morph<T extends ValidComponent = "span">(props: Props<T, MorphProps>): JSX.Element {
@@ -96,7 +99,7 @@ export function Morph<T extends ValidComponent = "span">(props: Props<T, MorphPr
     ),
   );
   const style = () =>
-    typeof local.style === "string" ? `display:inline-grid;${local.style}` : { display: "inline-grid", ...local.style };
+    typeof local.style === "string" ? `${WRAP};${local.style}` : { position: "relative", display: "inline-flex", "align-items": "center", ...local.style };
   return createComponent(
     Dynamic,
     mergeProps(others, {

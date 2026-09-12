@@ -42,14 +42,15 @@ export function leave(_node: Element, { delay = 0, index = 0 }: TransitionParams
   return { delay: delay + index * STAGGER.leave, duration: MS.leave, easing, css: fade };
 }
 
+// The active face sits in the flow and sizes the node; the inactive one floats over it.
 const face = (el: Element, shown: boolean) =>
-  ((el as HTMLElement).style.cssText += `;grid-area:1/1;will-change:opacity,filter,scale;opacity:${shown ? 1 : 0}`);
+  ((el as HTMLElement).style.cssText += `;display:inline-flex;align-items:center;white-space:nowrap;will-change:opacity,filter,scale${shown ? "" : ";position:absolute;inset:0;opacity:0"}`);
 
 /** `use:morph={active}` on an element whose two children are the off and on faces. */
 export const morph: Action<HTMLElement, boolean> = (node, active) => {
   const off = node.children[0];
   const on = node.children[1];
-  node.style.display = "inline-grid";
+  node.style.cssText += ";position:relative;display:inline-flex;align-items:center";
   face(off, !active);
   face(on, active);
   return {
