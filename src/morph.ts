@@ -47,12 +47,13 @@ export function morph(outgoing: Element, incoming: Element): Animation[] {
   const wrapper = outgoing.parentElement;
   const before = wrapper?.getBoundingClientRect().width ?? 0;
 
-  // The incoming face takes the flow; the outgoing one floats over it.
+  // The incoming face takes the flow; the outgoing one floats over it. Both are set
+  // explicitly so a class that hid the face at first paint cannot reassert itself.
   if (wrapper && ["static", ""].includes(getComputedStyle(wrapper).position)) style(wrapper).position = "relative";
   style(outgoing).position = "absolute";
   style(outgoing).inset = "0";
-  style(incoming).position = "";
-  style(incoming).inset = "";
+  style(incoming).position = "relative";
+  style(incoming).inset = "auto";
 
   const outText = textOf(outgoing);
   const inText = textOf(incoming);
@@ -63,8 +64,8 @@ export function morph(outgoing: Element, incoming: Element): Animation[] {
     const b = chars(incoming, inText);
     const p = prefix(outText, inText);
     const blur = still ? "blur(0)" : MORPH_BLUR;
-    style(outgoing).opacity = "";
-    style(incoming).opacity = "";
+    style(outgoing).opacity = "1";
+    style(incoming).opacity = "1";
     a.forEach((c, i) => {
       if (i < p) style(c).opacity = "0";
       else animations.push(run(c, { opacity: 0, filter: blur }, ["opacity", "filter"], TEXT.char, (i - p) * TEXT.stagger));

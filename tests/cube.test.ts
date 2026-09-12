@@ -106,9 +106,21 @@ describe("morph", () => {
     const { wrapper, off, on } = faces();
     morph(off, on);
     expect(wrapper.style.position).toBe("relative");
-    expect([off.style.position, on.style.position]).toEqual(["absolute", ""]);
+    expect([off.style.position, on.style.position]).toEqual(["absolute", "relative"]);
     morph(on, off);
-    expect([off.style.position, on.style.position]).toEqual(["", "absolute"]);
+    expect([off.style.position, on.style.position]).toEqual(["relative", "absolute"]);
+  });
+
+  it("overrides a class that hid the face at first paint", () => {
+    const { off, on } = faces();
+    off.textContent = "Save";
+    on.textContent = "Saved";
+    const sheet = document.head.appendChild(document.createElement("style"));
+    sheet.textContent = ".hidden { position: absolute; opacity: 0 }";
+    on.className = "hidden";
+    morph(off, on);
+    expect([on.style.position, on.style.opacity]).toEqual(["relative", "1"]);
+    sheet.remove();
   });
 
   it("diffs text faces per character: the shared prefix stays, the rest blur out and in, staggered", () => {
