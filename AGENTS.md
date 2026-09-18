@@ -12,6 +12,9 @@ keyboard activation, which the function never did.
 
 ## Invariants
 
+- **Library-only repository.** Keep core, adapters, tests, API examples,
+  documentation and release tooling here. Promotional videos and their assets
+  belong outside this repository.
 - **Zero runtime dependencies.** React, Vue, Solid and Svelte are optional
   peers for their subpath exports.
 - **No dials.** No function takes an easing, duration, distance or scale.

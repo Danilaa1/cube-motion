@@ -23,7 +23,7 @@ try {
     }
   }
   assert.match(readFileSync(join(packed, "dist/react.js"), "utf8"), /^['"]use client['"]/);
-  assert.ok(!existsSync(join(packed, "remotion")) && !existsSync(join(packed, "public")));
+  assert.deepEqual(readdirSync(packed).sort(), [".github", "LICENSE", "README.md", "dist", "examples", "package.json"]);
   writeFileSync(join(temp, "package.json"), JSON.stringify({ private: true, type: "module" }));
   if (process.argv.includes("--minimum-peers")) {
     run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--package-lock=false",

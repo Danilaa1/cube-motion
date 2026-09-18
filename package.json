@@ -80,22 +80,14 @@
     "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && node scripts/skill.mjs && tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit && tsc -p tests/tsconfig.json",
     "pack:check": "node scripts/pack-check.mjs",
-    "test": "vitest run",
-    "video:audio": "node remotion/generate-audio.mjs",
-    "video:check": "tsc -p remotion/tsconfig.json",
-    "video:render": "remotion render remotion/index.ts CubeMotionPromo out/cube-motion.mp4",
-    "video:preview": "remotion studio remotion/index.ts"
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@remotion/cli": "^4.0.525",
-    "@remotion/google-fonts": "^4.0.525",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.7",
-    "drawably": "^0.4.2",
     "happy-dom": "^20.10.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.8",
-    "remotion": "^4.0.525",
     "solid-js": "^1.9.13",
     "svelte": "^5.56.3",
     "typescript": "^5.8.3",
