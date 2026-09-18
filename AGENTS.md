@@ -21,7 +21,7 @@ keyboard activation, which the function never did.
   else.
 - **Numbers live in `src/tokens.ts`** with the reason beside them.
 - **Reduced motion is checked inside every function at call time.** Opacity
-  and colour stay, translate, scale and blur go, `press` dims instead.
+  and colour stay, translate, scale and blur go.
 - **Interruptible, always.** Each function reads the computed values it
   animates (`current` in `dom.ts`) before clearing what is running, and
   starts from there, so an interrupted motion retargets like a CSS
@@ -45,6 +45,9 @@ keyboard activation, which the function never did.
   the point of reading them together.
 - **Return the handle.** `Animation` objects, or an unbind/disconnect
   function, so the caller can stop what it started.
+- **Components animate their element by default.** `targets="children"`
+  explicitly staggers direct child elements. Core functions and hooks use the
+  same `targets` option; default `"self"`.
 - **React components name elements, never looks.** `as` takes a tag or a
   component. No `kind="card"`, no styling props, no motion props. A
   component's own props are exactly the core function's options.
@@ -57,10 +60,10 @@ keyboard activation, which the function never did.
 | `src/dom.ts` | `Targets`, `calm`, `list`, `clear`; keep it to helpers more than one job uses |
 | `src/rise.ts`, `leave.ts`, `morph.ts`, `reveal.ts` | one job each, its options type beside it |
 | `src/index.ts` | the export list, nothing else |
-| `src/react.ts` | four polymorphic components (`as`, props spread, ref merged) on top of one hook per job |
+| `src/react.ts` | three polymorphic components (`as`, props spread, ref merged); rise and leave share `Rise` |
 | `src/vue.ts` | the same components as `defineComponent` render functions, attrs spread by hand |
 | `src/svelte.ts` | rise and leave as transitions (the curve solved in JS from `EASE_POINTS`), morph and reveal as actions; Svelte owns exit through `out:` |
-| `src/solid.ts` | the same four components on `Dynamic`, no JSX so tsc is the only build; lifecycle in the component body because Solid applies `ref` outside the owner |
+| `src/solid.ts` | the same three components on `Dynamic`, no JSX so tsc is the only build; lifecycle in the component body because Solid applies `ref` outside the owner |
 | `tests/setup.ts` | WAAPI, matchMedia and IntersectionObserver stand-ins for happy-dom |
 | `scripts/skill.mjs` | writes `skills/cube-motion/SKILL.md` from `.github/agent.md` on build; edit the source, never the skill |
 | `vitest.config.ts` | inlines solid-js with the `browser` condition, otherwise Node loads Solid's server build and `render` has no owner |

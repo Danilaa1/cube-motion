@@ -3,12 +3,14 @@ export type Targets = string | Element | Iterable<Element>;
 
 export const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export const list = (targets: Targets): Element[] =>
-  typeof targets === "string"
+export const list = (targets: Targets, scope: "self" | "children" = "self"): Element[] => {
+  const elements = typeof targets === "string"
     ? [...document.querySelectorAll(targets)]
     : targets instanceof Element
       ? [targets]
       : [...targets];
+  return [...new Set(scope === "children" ? elements.flatMap((el) => [...el.children]) : elements)];
+};
 
 /** Cancel everything running on the element so a new motion never stacks on an old fill. */
 export const clear = (el: Element) => el.getAnimations().forEach((a) => a.cancel());

@@ -20,4 +20,4 @@ export const STAGGER = { rise: 70, leave: 40, reveal: 60 } as const;
 export const LIFT_PX = 12; // rise comes up this far; leave drops the same distance
 export const MORPH_SCALE = 0.8; // a slight shrink under the blur: focus pulling, not a pop
 export const MORPH_BLUR = "blur(4px)";
-export const REVEAL_MARGIN = "0px 0px -10% 0px"; // fire once 10% of the viewport height is inside
+export const REVEAL_INSET = 0.1; // inset the bottom by 10% of the scroll root's height, measured at binding

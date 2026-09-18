@@ -4,7 +4,6 @@ import {
   mergeProps,
   on,
   onCleanup,
-  onMount,
   Show,
   splitProps,
   type ComponentProps,
@@ -13,6 +12,7 @@ import {
 } from "solid-js";
 import { createComponent, Dynamic } from "solid-js/web";
 import { leave, morph, reveal, rise, type RevealOptions, type RiseOptions } from "./index.js";
+import { prepareMorph } from "./morph.js";
 
 // Components: render the element you name, spread the rest, bind the motion.
 
@@ -20,11 +20,11 @@ type Props<T extends ValidComponent, Own> = Own & { as?: T } & Omit<ComponentPro
 
 // Solid applies `ref` outside the owner, so lifecycle hooks are registered in the component body
 // and the ref only captures the element and forwards it to the caller.
-const element = (as: ValidComponent, others: Record<string, unknown>, theirs: unknown, capture: (el: Element) => void) =>
+const element = (as: () => ValidComponent, others: Record<string, unknown>, theirs: unknown, capture: (el: Element) => void) =>
   createComponent(
     Dynamic,
     mergeProps(others, {
-      component: as,
+      get component() { return as(); },
       ref(el: Element) {
         capture(el);
         if (typeof theirs === "function") theirs(el);
@@ -37,30 +37,32 @@ interface RiseProps extends RiseOptions {
   show?: boolean;
 }
 
-/** Children rise on mount and leave before unmount. Renders a div unless `as` says otherwise. */
+/** Rises on mount and leaves before unmount. Use targets="children" for direct children. Renders a div by default. */
 export function Rise<T extends ValidComponent = "div">(props: Props<T, RiseProps>): JSX.Element {
-  const [local, others] = splitProps(props as Props<"div", RiseProps>, ["as", "show", "stagger", "delay", "ref"]);
+  const [local, others] = splitProps(props as Props<"div", RiseProps>, ["as", "show", "targets", "stagger", "delay", "ref"]);
   const show = () => local.show ?? true;
   const [mounted, setMounted] = createSignal(show());
-  let el: Element | undefined;
-  const enter = () => el && rise(el.children, { stagger: local.stagger, delay: local.delay });
+  const [el, setEl] = createSignal<Element>();
+  let animations: Animation[] = [];
+  onCleanup(() => animations.forEach((a) => a.cancel()));
   createEffect(
     on(
-      show,
-      (shown) => {
+      () => [show(), el()] as const,
+      ([shown, current], previous) => {
+        if (current !== previous?.[1]) animations.forEach((a) => a.cancel());
         if (shown) {
-          if (mounted()) enter();
-          else setMounted(true);
+          if (!mounted()) setMounted(true);
+          else if (current) animations = rise(current, { targets: local.targets, stagger: local.stagger, delay: local.delay });
           return;
         }
-        if (!el) return;
+        if (!current) return;
         let live = true;
-        Promise.all(leave(el.children).map((a) => a.finished))
+        animations = leave(current, { targets: local.targets });
+        Promise.all(animations.map((a) => a.finished))
           .then(() => live && setMounted(false))
           .catch(() => {});
         onCleanup(() => (live = false));
       },
-      { defer: true },
     ),
   );
   return createComponent(Show, {
@@ -68,8 +70,8 @@ export function Rise<T extends ValidComponent = "div">(props: Props<T, RiseProps
       return mounted();
     },
     get children() {
-      onMount(enter);
-      return element(local.as ?? "div", others, local.ref, (e) => (el = e));
+      onCleanup(() => setEl(undefined));
+      return element(() => local.as ?? "div", others, local.ref, setEl);
     },
   } as unknown as ComponentProps<typeof Show>);
 }
@@ -89,13 +91,23 @@ const face = (shown: boolean) =>
 export function Morph<T extends ValidComponent = "span">(props: Props<T, MorphProps>): JSX.Element {
   const [local, others] = splitProps(props as Props<"span", MorphProps>, ["as", "active", "off", "on", "style"]);
   const shownAtMount = local.active;
-  let a!: Element;
-  let b!: Element;
+  const [a, setA] = createSignal<Element>();
+  const [b, setB] = createSignal<Element>();
+  let animations: Animation[] = [];
+  onCleanup(() => animations.forEach((a) => a.cancel()));
   createEffect(
     on(
-      () => local.active,
-      (active) => morph(active ? a : b, active ? b : a),
-      { defer: true },
+      () => [local.active, a(), b()] as const,
+      ([active, off, on], previous) => {
+        if (!off || !on) return;
+        const outgoing = active ? off : on;
+        const incoming = active ? on : off;
+        if (previous?.[1] !== off || previous?.[2] !== on) {
+          animations.forEach((a) => a.cancel());
+          prepareMorph(outgoing, incoming);
+          animations = [];
+        } else animations = morph(outgoing, incoming);
+      },
     ),
   );
   const style = () =>
@@ -111,18 +123,20 @@ export function Morph<T extends ValidComponent = "span">(props: Props<T, MorphPr
       },
       get children() {
         return [
-          createComponent(Dynamic, { component: "span", ref: (el: Element) => (a = el), style: face(!shownAtMount), get children() { return local.off; } }),
-          createComponent(Dynamic, { component: "span", ref: (el: Element) => (b = el), style: face(shownAtMount), get children() { return local.on; } }),
+          createComponent(Dynamic, { component: "span", ref: setA, style: face(!shownAtMount), "aria-hidden": shownAtMount, inert: shownAtMount, get children() { return local.off; } }),
+          createComponent(Dynamic, { component: "span", ref: setB, style: face(shownAtMount), "aria-hidden": !shownAtMount, inert: !shownAtMount, get children() { return local.on; } }),
         ];
       },
     }) as ComponentProps<typeof Dynamic>,
   );
 }
 
-/** Children reveal as they scroll into view. Renders a div unless `as` says otherwise. */
+/** Reveals as it scrolls into view. Use targets="children" for direct children. Renders a div by default. */
 export function Reveal<T extends ValidComponent = "div">(props: Props<T, RevealOptions>): JSX.Element {
-  const [local, others] = splitProps(props as Props<"div", RevealOptions>, ["as", "stagger", "root", "ref"]);
-  let el!: Element;
-  onMount(() => onCleanup(reveal(el.children, { stagger: local.stagger, root: local.root })));
-  return element(local.as ?? "div", others, local.ref, (e) => (el = e));
+  const [local, others] = splitProps(props as Props<"div", RevealOptions>, ["as", "targets", "stagger", "root", "ref"]);
+  const [el, setEl] = createSignal<Element>();
+  createEffect(on(el, (current) => {
+    if (current) onCleanup(reveal(current, { targets: local.targets, stagger: local.stagger, root: local.root }));
+  }));
+  return element(() => local.as ?? "div", others, local.ref, setEl);
 }

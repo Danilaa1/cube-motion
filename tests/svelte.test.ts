@@ -31,6 +31,19 @@ describe("svelte transitions", () => {
     setReduceMotion(true);
     expect(rise(el()).css!(0.5, 0.5)).toBe("opacity:0.5");
   });
+
+  it("samples interrupted motion and checks reduced motion when each transition starts", () => {
+    const node = el();
+    node.animate([], { duration: 640 });
+    node.style.opacity = "0.4";
+    node.style.translate = "0px 7px";
+    expect(rise(node).css!(0, 1)).toBe("opacity:0.4;translate:calc(0px * 1) calc(7px * 1 + 0px)");
+    expect(leave(node).css!(1, 0)).toBe("opacity:0.4;translate:calc(0px * 1) calc(7px * 1 + 0px)");
+    setReduceMotion(true);
+    const css = rise(node).css!;
+    setReduceMotion(false);
+    expect(css(0.5, 0.5)).toBe("opacity:0.7");
+  });
 });
 
 describe("svelte actions", () => {
@@ -43,19 +56,37 @@ describe("svelte actions", () => {
     const action = morph(node, false)!;
     expect([node.style.position, node.style.display]).toEqual(["relative", "inline-flex"]);
     expect([off.style.position, on.style.position, on.style.opacity]).toEqual(["relative", "absolute", "0"]);
+    expect(on.hasAttribute("inert")).toBe(true);
+    expect(on.getAttribute("aria-hidden")).toBe("true");
     action.update!(false);
     expect(animationsOf(off)).toHaveLength(0);
     action.update!(true);
     expect(animationsOf(off)[0].options.duration).toBe(220);
     expect(animationsOf(on)[0].options.delay).toBe(130);
+    action.destroy!();
+    expect(animationsOf(on)[0].cancelled).toBe(true);
+  });
+
+  it("reports malformed morph markup before changing the node", () => {
+    const node = el();
+    expect(() => morph(node, false)).toThrow("exactly two child faces");
+    expect(node.style.cssText).toBe("");
   });
 
   it("reveal observes the children and disconnects on destroy", () => {
     const node = el();
     node.appendChild(document.createElement("article"));
-    const action = reveal(node, undefined)!;
+    const action = reveal(node, { targets: "children" })!;
     expect(observed).toHaveLength(1);
     action.destroy!();
     expect(observed).toHaveLength(0);
+  });
+
+  it("reveals the element itself by default, including its child content", () => {
+    const node = el();
+    node.appendChild(document.createElement("article"));
+    const action = reveal(node, undefined)!;
+    expect(observed).toEqual([node]);
+    action.destroy!();
   });
 });

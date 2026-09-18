@@ -1,10 +1,15 @@
+"use client";
+
 import {
   createElement,
   forwardRef,
   useEffect,
+  useMemo,
   useRef,
   useState,
+  version,
   type ComponentPropsWithoutRef,
+  type ComponentPropsWithRef,
   type ElementType,
   type ReactElement,
   type ReactNode,
@@ -12,16 +17,27 @@ import {
   type RefObject,
 } from "react";
 import { leave, morph, reveal, rise, type RevealOptions, type RiseOptions } from "./index.js";
+import { prepareMorph } from "./morph.js";
 
 type Ref<T extends Element> = RefObject<T | null>;
+const cancel = (animations: Animation[]) => animations.forEach((animation) => animation.cancel());
 
 // Hooks: the escape hatch when you already own the element.
 
-/** Returns a ref for a container. Its children rise on mount. */
+/** Returns a ref. The element rises on attachment; use targets="children" for its direct children. */
 export function useRise<T extends Element = HTMLElement>(options?: RiseOptions): Ref<T> {
   const ref = useRef<T>(null);
+  const previous = useRef<T | null>(null);
+  const animations = useRef<Animation[]>([]);
   useEffect(() => {
-    if (ref.current) rise(ref.current.children, options);
+    if (previous.current === ref.current) return;
+    cancel(animations.current);
+    previous.current = ref.current;
+    animations.current = ref.current ? rise(ref.current, options) : [];
+  });
+  useEffect(() => () => {
+    cancel(animations.current);
+    previous.current = null;
   }, []);
   return ref;
 }
@@ -30,62 +46,107 @@ export function useRise<T extends Element = HTMLElement>(options?: RiseOptions):
 export function useMorph<T extends Element = HTMLElement>(active: boolean): [Ref<T>, Ref<T>] {
   const off = useRef<T>(null);
   const on = useRef<T>(null);
-  const shown = useRef(active);
+  const previous = useRef<{ off: T; on: T; active: boolean } | null>(null);
+  const animations = useRef<Animation[]>([]);
   useEffect(() => {
+    const replaced = previous.current?.off !== off.current || previous.current?.on !== on.current;
+    if (replaced) {
+      cancel(animations.current);
+      previous.current = null;
+    }
     if (!off.current || !on.current) return;
-    const faces = morph(active ? off.current : on.current, active ? on.current : off.current);
-    if (shown.current === active) faces.forEach((a) => a.finish());
-    shown.current = active;
-  }, [active]);
+    if (previous.current?.active === active) return;
+    const outgoing = active ? off.current : on.current;
+    const incoming = active ? on.current : off.current;
+    if (!previous.current) {
+      prepareMorph(outgoing, incoming);
+      animations.current = [];
+    } else animations.current = morph(outgoing, incoming);
+    previous.current = { off: off.current, on: on.current, active };
+  });
+  useEffect(() => () => {
+    cancel(animations.current);
+    previous.current = null;
+  }, []);
   return [off, on];
 }
 
-/** Returns a ref for a container. Its children reveal as they scroll into view. */
+/** Returns a ref. The element reveals as it scrolls into view; use targets="children" for its direct children. */
 export function useReveal<T extends Element = HTMLElement>(options?: RevealOptions): Ref<T> {
   const ref = useRef<T>(null);
-  useEffect(() => (ref.current ? reveal(ref.current.children, options) : undefined), []);
+  const previous = useRef<T | null>(null);
+  const stop = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => {
+    if (previous.current === ref.current) return;
+    stop.current?.();
+    previous.current = ref.current;
+    stop.current = ref.current ? reveal(ref.current, options) : undefined;
+  });
+  useEffect(() => () => {
+    stop.current?.();
+    previous.current = null;
+  }, []);
   return ref;
 }
 
 // Components: render the element you name, spread the rest, bind the motion.
 
 type Props<T extends ElementType, Own> = Own & { as?: T } & Omit<ComponentPropsWithoutRef<T>, keyof Own | "as">;
+type PolyRef<T extends ElementType> = "ref" extends keyof ComponentPropsWithRef<T> ? ComponentPropsWithRef<T>["ref"] : never;
 type Poly<D extends ElementType, Own> = <T extends ElementType = D>(
-  props: Props<T, Own> & { ref?: ReactRef<Element> },
+  props: Props<T, Own> & { ref?: PolyRef<T> },
 ) => ReactElement | null;
 
-const merged = (own: Ref<Element>, theirs: ReactRef<Element> | undefined) => (el: Element | null) => {
-  (own as { current: Element | null }).current = el;
-  if (typeof theirs === "function") theirs(el);
-  else if (theirs) (theirs as { current: Element | null }).current = el;
-};
+const useMergedRef = (own: Ref<Element>, theirs: ReactRef<Element> | undefined) => useMemo(() => {
+  let cleanup: void | (() => void);
+  return (el: Element | null) => {
+    (own as { current: Element | null }).current = el;
+    if (typeof theirs === "function") {
+      if (el) cleanup = theirs(el);
+      else if (typeof cleanup === "function") {
+        cleanup();
+        cleanup = undefined;
+      } else theirs(null);
+    } else if (theirs) (theirs as { current: Element | null }).current = el;
+  };
+}, [own, theirs]);
 
 interface RiseProps extends RiseOptions {
   /** Mounted and risen while true; leaves, then unmounts, when it turns false. Default true. */
   show?: boolean;
 }
 
-/** Children rise on mount and leave before unmount. Renders a div unless `as` says otherwise. */
+/** Rises on mount and leaves before unmount. Use targets="children" for direct children. Renders a div by default. */
 export const Rise = forwardRef<Element, Props<ElementType, RiseProps>>(
-  ({ as = "div", show = true, stagger, delay, ...rest }, ref) => {
+  ({ as = "div", show = true, targets, stagger, delay, ...rest }, ref) => {
     const el = useRef<Element>(null);
+    const mergedRef = useMergedRef(el, ref);
+    const previous = useRef<{ el: Element | null; show: boolean } | null>(null);
+    const animations = useRef<Animation[]>([]);
+    const run = useRef(0);
     const [mounted, setMounted] = useState(show);
     if (show && !mounted) setMounted(true);
     useEffect(() => {
+      if (previous.current?.el === el.current && previous.current.show === show) return;
+      if (previous.current?.el !== el.current) cancel(animations.current);
+      previous.current = { el: el.current, show };
+      const mine = ++run.current;
       if (!el.current) return;
       if (show) {
-        rise(el.current.children, { stagger, delay });
+        animations.current = rise(el.current, { targets, stagger, delay });
         return;
       }
-      let live = true;
-      Promise.all(leave(el.current.children).map((a) => a.finished))
-        .then(() => live && setMounted(false))
+      animations.current = leave(el.current, { targets });
+      Promise.all(animations.current.map((a) => a.finished))
+        .then(() => mine === run.current && setMounted(false))
         .catch(() => {});
-      return () => {
-        live = false;
-      };
-    }, [show]);
-    return mounted ? createElement(as, { ...rest, ref: merged(el, ref) }) : null;
+    });
+    useEffect(() => () => {
+      ++run.current;
+      cancel(animations.current);
+      previous.current = null;
+    }, []);
+    return mounted ? createElement(as, { ...rest, ref: mergedRef }) : null;
   },
 ) as unknown as Poly<"div", RiseProps>;
 
@@ -105,6 +166,9 @@ const face = (shown: boolean) => ({
   ...(shown ? { position: "relative" } : { position: "absolute", inset: 0, opacity: 0 }),
 });
 
+// React 18 forwards inert as an unknown attribute; React 19 knows it is boolean.
+const inert = version.startsWith("18.") ? "" : true;
+
 /** Two stacked faces. Shows `on` when active, `off` otherwise, morphing between them. */
 export const Morph = forwardRef<Element, Props<ElementType, MorphProps>>(
   ({ as = "span", active, off, on, style, ...rest }, ref) => {
@@ -113,14 +177,14 @@ export const Morph = forwardRef<Element, Props<ElementType, MorphProps>>(
     return createElement(
       as,
       { ...rest, ref, style: { ...wrap, ...style } },
-      createElement("span", { ref: a, style: face(!shownAtMount) }, off),
-      createElement("span", { ref: b, style: face(shownAtMount) }, on),
+      createElement("span", { ref: a, style: face(!shownAtMount), "aria-hidden": shownAtMount, inert: shownAtMount ? inert : undefined }, off),
+      createElement("span", { ref: b, style: face(shownAtMount), "aria-hidden": !shownAtMount, inert: shownAtMount ? undefined : inert }, on),
     );
   },
 ) as unknown as Poly<"span", MorphProps>;
 
-/** Children reveal as they scroll into view. Renders a div unless `as` says otherwise. */
+/** Reveals as it scrolls into view. Use targets="children" for direct children. Renders a div by default. */
 export const Reveal = forwardRef<Element, Props<ElementType, RevealOptions>>(
-  ({ as = "div", stagger, root, ...rest }, ref) =>
-    createElement(as, { ...rest, ref: merged(useReveal({ stagger, root }), ref) }),
+  ({ as = "div", targets, stagger, root, ...rest }, ref) =>
+    createElement(as, { ...rest, ref: useMergedRef(useReveal({ targets, stagger, root }), ref) }),
 ) as unknown as Poly<"div", RevealOptions>;

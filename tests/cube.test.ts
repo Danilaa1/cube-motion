@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { leave, morph, reveal, rise } from "../src/index.js";
-import { animationsOf, install, intersect, observed, observerOptions, setReduceMotion } from "./setup.js";
+import { animationsOf, install, intersect, observed, observerOptions, setReduceMotion, settle } from "./setup.js";
 
 const el = () => document.body.appendChild(document.createElement("div"));
 
@@ -35,7 +35,19 @@ describe("rise", () => {
     expect(a).toBeUndefined();
     const target = el();
     rise(target);
-    expect(animationsOf(target)[0].keyframes).toEqual([{ opacity: 0 }, { opacity: 1, translate: "0 0" }]);
+    expect(animationsOf(target)[0].keyframes).toEqual([{ opacity: 0 }, { opacity: 1 }]);
+  });
+
+  it("targets self by default and direct children explicitly, without duplicates", () => {
+    const parent = el();
+    const children = [parent.appendChild(document.createElement("span")), parent.appendChild(document.createElement("span"))];
+    expect(rise(parent)).toHaveLength(1);
+    expect(animationsOf(children[0])).toHaveLength(0);
+    expect(rise([parent, parent], { targets: "children" })).toHaveLength(2);
+    expect(animationsOf(children[1])[0].options.delay).toBe(70);
+    expect(leave(parent, { targets: "children" })).toHaveLength(2);
+    reveal(parent, { targets: "children" });
+    expect(observed).toEqual(children);
   });
 });
 
@@ -45,7 +57,7 @@ describe("leave", () => {
     leave(els);
     const first = animationsOf(els[0])[0];
     expect(first.keyframes).toEqual([{ opacity: 1, translate: "0 0" }, { opacity: 0, translate: "0 12px" }]);
-    expect(first.options).toMatchObject({ duration: 320, fill: "forwards" });
+    expect(first.options).toMatchObject({ duration: 320, fill: "both" });
     expect(animationsOf(els[1])[0].options.delay).toBe(40);
   });
 
@@ -76,11 +88,46 @@ describe("leave", () => {
     setReduceMotion(true);
     const target = el();
     leave(target);
-    expect(animationsOf(target)[0].keyframes).toEqual([{ opacity: 1, translate: "0 0" }, { opacity: 0 }]);
+    expect(animationsOf(target)[0].keyframes).toEqual([{ opacity: 1 }, { opacity: 0 }]);
+  });
+
+  it("holds an interrupted entrance through the exit delay and rejects its finished promise", async () => {
+    const target = el();
+    const [enter] = rise(target);
+    target.style.opacity = "0.4";
+    target.style.translate = "0 7px";
+    leave(target, { delay: 100 });
+    expect(animationsOf(target)[1]).toMatchObject({
+      keyframes: [{ opacity: "0.4", translate: "0 7px" }, { opacity: 0, translate: "0 12px" }],
+      options: { fill: "both", delay: 100 },
+    });
+    await expect(enter.finished).rejects.toMatchObject({ name: "AbortError" });
+  });
+
+  it("drops spatial keyframes when reduced motion is enabled during an entrance", () => {
+    const target = el();
+    rise(target);
+    target.style.opacity = "0.4";
+    target.style.translate = "0 7px";
+    setReduceMotion(true);
+    leave(target);
+    expect(animationsOf(target)[1].keyframes).toEqual([{ opacity: "0.4" }, { opacity: 0 }]);
+    rise(target);
+    expect(animationsOf(target)[2].keyframes).toEqual([{ opacity: "0.4" }, { opacity: 1 }]);
+  });
+
+  it("starts canonically after a non-filling entrance has finished", () => {
+    const target = el();
+    rise(target);
+    settle();
+    leave(target);
+    expect((animationsOf(target)[1].keyframes as Keyframe[])[0]).toEqual({ opacity: 1, translate: "0 0" });
   });
 });
 
 describe("morph", () => {
+  const characterSpans = (wrapper: Element, text: string) =>
+    [...[...wrapper.querySelectorAll("[data-cube-morph-overlay]")].find((node) => node.textContent === text)!.children] as HTMLElement[];
   const faces = () => {
     const wrapper = el();
     const off = wrapper.appendChild(document.createElement("span"));
@@ -111,28 +158,32 @@ describe("morph", () => {
     expect([off.style.position, on.style.position]).toEqual(["relative", "absolute"]);
   });
 
-  it("overrides a class that hid the face at first paint", () => {
+  it("overrides a class that hid the face at first paint", async () => {
     const { off, on } = faces();
     off.textContent = "Save";
     on.textContent = "Saved";
     const sheet = document.head.appendChild(document.createElement("style"));
     sheet.textContent = ".hidden { position: absolute; opacity: 0 }";
     on.className = "hidden";
-    morph(off, on);
+    const animations = morph(off, on);
+    animations.forEach((animation) => animation.finish());
+    await Promise.all(animations.map((animation) => animation.finished));
+    await Promise.resolve();
     expect([on.style.position, on.style.opacity]).toEqual(["relative", "1"]);
     sheet.remove();
   });
 
   it("diffs text faces per character: the shared prefix stays, the rest blur out and in, staggered", () => {
-    const { off, on } = faces();
+    const { wrapper, off, on } = faces();
     off.textContent = "Copy";
     on.textContent = "Copied";
     morph(off, on);
-    const outChars = [...off.children] as HTMLElement[];
-    const inChars = [...on.children] as HTMLElement[];
+    const outChars = characterSpans(wrapper, "Copy");
+    const inChars = characterSpans(wrapper, "Copied");
     expect(outChars.map((c) => c.textContent).join("")).toBe("Copy");
     expect(inChars.map((c) => c.textContent).join("")).toBe("Copied");
-    expect(on.getAttribute("aria-label")).toBe("Copied");
+    expect(on.textContent).toBe("Copied");
+    expect(on.hasAttribute("aria-hidden")).toBe(false);
     expect(outChars.slice(0, 3).map((c) => c.style.opacity)).toEqual(["0", "0", "0"]);
     expect(animationsOf(outChars[2])).toHaveLength(0);
     expect(animationsOf(outChars[3])[0]).toMatchObject({ options: { duration: 180, delay: 0 } });
@@ -143,13 +194,13 @@ describe("morph", () => {
   });
 
   it("reuses the character spans on the way back", () => {
-    const { off, on } = faces();
+    const { wrapper, off, on } = faces();
     off.textContent = "Copy";
     on.textContent = "Copied";
     morph(off, on);
-    const spans = [...on.children];
+    const spans = characterSpans(wrapper, "Copied");
     morph(on, off);
-    expect([...on.children]).toEqual(spans);
+    expect(characterSpans(wrapper, "Copied")).toEqual(spans);
     expect(animationsOf(spans[5] as Element).at(-1)!.options.delay).toBe(2 * 35);
   });
 
@@ -173,18 +224,18 @@ describe("morph", () => {
     off.appendChild(document.createElement("svg"));
     on.appendChild(document.createElement("svg"));
     morph(off, on);
-    expect((animationsOf(off)[0].keyframes as Keyframe[])[1]).toEqual({ opacity: 0, scale: 1, filter: "blur(0)" });
+    expect((animationsOf(off)[0].keyframes as Keyframe[])[1]).toEqual({ opacity: 0 });
     expect(animationsOf(on)[0].options.delay).toBe(0);
   });
 });
 
 describe("reveal", () => {
-  it("hides now, observes with a -10% bottom margin, and rises on intersection with a 60ms stagger", () => {
+  it("hides now, insets by 10% of the viewport height, and rises on intersection with a 60ms stagger", () => {
     const rows = [el(), el()];
     const disconnect = reveal(rows);
     expect(rows.map((r) => r.style.opacity)).toEqual(["0", "0"]);
     expect(observed).toEqual(rows);
-    expect(observerOptions).toEqual({ root: null, rootMargin: "0px 0px -10% 0px" });
+    expect(observerOptions).toEqual({ root: null, rootMargin: `0px 0px -${window.innerHeight * 0.1}px 0px` });
     intersect(rows.map((target) => ({ target, isIntersecting: true })));
     expect(rows[1].style.opacity).toBe("");
     expect(animationsOf(rows[1])[0].options.delay).toBe(60);
@@ -198,5 +249,29 @@ describe("reveal", () => {
     intersect([{ target: row, isIntersecting: false }]);
     expect(row.style.opacity).toBe("0");
     expect(animationsOf(row)).toHaveLength(0);
+  });
+
+  it("restores authored opacity on intersection and disconnect, and ignores stale callbacks", () => {
+    const rows = [el(), el()];
+    rows[0].style.setProperty("opacity", "0.4", "important");
+    const stop = reveal(rows);
+    intersect([{ target: rows[0], isIntersecting: true }, { target: rows[0], isIntersecting: true }]);
+    expect(rows[0].style.opacity).toBe("0.4");
+    expect(rows[0].style.getPropertyPriority("opacity")).toBe("important");
+    expect(animationsOf(rows[0])).toHaveLength(1);
+    stop();
+    expect(rows[1].style.opacity).toBe("");
+    expect(animationsOf(rows[0])[0].cancelled).toBe(true);
+    intersect([{ target: rows[1], isIntersecting: true }]);
+    expect(animationsOf(rows[1])).toHaveLength(0);
+    stop();
+  });
+
+  it("uses the explicit scroll root's height rather than its width", () => {
+    const root = el();
+    Object.defineProperty(root, "clientHeight", { value: 200 });
+    Object.defineProperty(root, "clientWidth", { value: 1000 });
+    reveal(el(), { root });
+    expect(observerOptions).toEqual({ root, rootMargin: "0px 0px -20px 0px" });
   });
 });

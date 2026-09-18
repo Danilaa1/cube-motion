@@ -6,6 +6,8 @@ export interface Recorded {
   options: KeyframeAnimationOptions;
   cancelled: boolean;
   finishedEarly: boolean;
+  completed: boolean;
+  onfinish?: (() => void) | null;
   cancel(): void;
   finish(): void;
   finished: Promise<void>;
@@ -36,19 +38,32 @@ export function install() {
   pending = [];
   Element.prototype.animate = function (keyframes, options) {
     let resolve!: () => void;
-    const finished = new Promise<void>((r) => (resolve = r));
-    pending.push(resolve);
+    let reject!: (reason: unknown) => void;
+    const finished = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
+    // The stand-in creates this promise eagerly, unlike consumers reading WAAPI's getter.
+    // Observe it here while preserving its rejection for callers awaiting `finished`.
+    void finished.catch(() => {});
+    pending.push(() => {
+      if (a.cancelled) return;
+      a.completed = true;
+      resolve();
+      a.onfinish?.();
+    });
     const a: Recorded = {
       keyframes: keyframes as Keyframe[],
       options: options as KeyframeAnimationOptions,
       cancelled: false,
       finishedEarly: false,
+      completed: false,
       cancel() {
         a.cancelled = true;
+        if (!a.completed) reject(new DOMException("Animation cancelled", "AbortError"));
       },
       finish() {
         a.finishedEarly = true;
+        a.completed = true;
         resolve();
+        a.onfinish?.();
       },
       finished,
     };
@@ -56,7 +71,7 @@ export function install() {
     return a as unknown as Animation;
   };
   Element.prototype.getAnimations = function () {
-    return animationsOf(this).filter((a) => !a.cancelled) as unknown as Animation[];
+    return animationsOf(this).filter((a) => !a.cancelled && (!a.completed || a.options.fill === "both" || a.options.fill === "forwards")) as unknown as Animation[];
   };
   vi.stubGlobal("matchMedia", () => ({ matches: reduceMotion }));
   observed = [];
@@ -70,7 +85,9 @@ export function install() {
       observe(el: Element) {
         observed.push(el);
       }
-      unobserve() {}
+      unobserve(el: Element) {
+        observed = observed.filter((target) => target !== el);
+      }
       disconnect() {
         observed = [];
       }
