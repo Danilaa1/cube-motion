@@ -82,5 +82,5 @@ keyboard activation, which the function never did.
 
 ## Site
 
-The landing page lives in `Danilaa1/cube-motion-site` and carries a vendored
-copy of the core until the first npm release.
+The landing page lives in `danielwh2/cube-motion-site` and uses the published
+`cube-motion` package from npm.

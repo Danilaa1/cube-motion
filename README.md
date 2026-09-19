@@ -189,7 +189,7 @@ Every function reads `prefers-reduced-motion` when it runs. Opacity stays, movem
 A library with no dials is one an agent cannot misuse. It can only choose the job. `cube-motion/agent.md` is written for that reader: signatures, a job table, the rules, and nothing to tune.
 
 ```
-npx skills add Danilaa1/cube-motion
+npx skills add danielwh2/cube-motion
 ```
 
 installs it as a skill for Claude Code, Cursor and friends.
